@@ -139,6 +139,7 @@ class Qwen2VL(VLLM):
         self.client = OpenAI(
             api_key=api_key, http_client=self.http_client, base_url=url
         )
+        self.short_name = "qwen2vl"
 
     def infer(
         self,
@@ -177,7 +178,7 @@ class Llama32VisionCoT(OpenAICompat):
             base_url=base_url if base_url else "http://127.0.0.1:8000",
         )
         self.model_name = self.query_model_name()
-        self.short_name = "llama32vcot"
+        self.short_name = "llavacot"
 
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
         # This model does not support system prompts, so we replace it with role `user`.

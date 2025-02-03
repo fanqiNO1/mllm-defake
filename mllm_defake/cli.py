@@ -1,6 +1,6 @@
-import re
 import os
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -14,8 +14,7 @@ import mllm_defake
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
 from mllm_defake.vllms import VLLM
 
-
-SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llama32vcot", "qvq"]
+SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llavacot", "qvq"]
 SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", ""]
 
 
@@ -64,7 +63,7 @@ def load_model(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return Llama32VisionInstruct(api_key=api_key, base_url=base_url)
-    elif model == "llama-3.2-vision-cot" or model == "llama32vcot":
+    elif model == "llama-3.2-vision-cot" or model == "llavacot":
         from mllm_defake.vllms import Llama32VisionCoT
 
         api_key = os.getenv("OPENAI_API_KEY")
@@ -348,6 +347,7 @@ def guess_experiment_setup_from_path(path: Path) -> tuple[str, str, str, int]:
         if full_str.startswith(sub_str + "-") or full_str.startswith(sub_str + "_"):
             return full_str[len(sub_str) + 1 :]
         return full_str
+
     dataset = ""
     for ds in SUPPORTED_DATASETS:
         new_name = match_and_remove(name, ds)
@@ -362,7 +362,7 @@ def guess_experiment_setup_from_path(path: Path) -> tuple[str, str, str, int]:
     count_str = re.search(r"^(\d+)_", name)
     if count_str:
         count = int(count_str.group(1))
-        name = name[count_str.end():]
+        name = name[count_str.end() :]
     else:
         logger.warning("Could not determine count from the name: {}", name)
     # 3. match model from SUPPORTED_MODELS
