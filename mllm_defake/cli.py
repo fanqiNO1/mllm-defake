@@ -1,3 +1,4 @@
+import re
 import os
 import random
 import sys
@@ -12,6 +13,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 import mllm_defake
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
 from mllm_defake.vllms import VLLM
+
+
+SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llama32vcot", "qvq"]
+SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", ""]
 
 
 def find_prompt_file(prompt: str) -> dict:
@@ -75,11 +80,39 @@ def load_model(model: str) -> VLLM:
         raise ValueError(f"Invalid model: {model}")
 
 
-def load_samples(dataset: str, count: int, real_dir: Path | None=None, fake_dir: Path | None=None) -> tuple[list[Path], list[Path]]:
+def load_samples(
+    dataset: str, count: int, real_dir: Path | None = None, fake_dir: Path | None = None
+) -> tuple[list[Path], list[Path]]:
     if dataset == "WildFakeResampled":
         from mllm_defake.defake_dataset import WildFakeResampled
 
         dataset = WildFakeResampled()
+        real_samples, fake_samples = dataset.list_images()
+        if count < len(real_samples):
+            real_samples = random.sample(real_samples, count)
+            logger.debug(
+                f"Sampling {count} / {len(real_samples)} real samples from {dataset}"
+            )
+        if count < len(fake_samples):
+            fake_samples = random.sample(fake_samples, count)
+            logger.debug(
+                f"Sampling {count} / {len(fake_samples)} fake samples from {dataset}"
+            )
+        logger.info(
+            "Loaded {} real samples and {} fake samples from {}",
+            len(real_samples),
+            len(fake_samples),
+            dataset,
+        )
+        return real_samples, fake_samples
+    elif dataset == "ImageFolders":
+        from mllm_defake.defake_dataset import ImageFolders
+
+        if not real_dir or not fake_dir:
+            raise ValueError(
+                "If `--dataset` is empty, `--real_dir` and `--fake_dir` must be specified."
+            )
+        dataset = ImageFolders(real_dir, fake_dir)
         real_samples, fake_samples = dataset.list_images()
         if count < len(real_samples):
             real_samples = random.sample(real_samples, count)
@@ -112,26 +145,26 @@ def load_samples(dataset: str, count: int, real_dir: Path | None=None, fake_dir:
 @click.option(
     "-m",
     "--model",
-    type=click.Choice(["gpt4o", "gpt4omini", "llama32vi", "llama32vcot", "qvq"]),
+    type=click.Choice(SUPPORTED_MODELS),
     help="The model to use for inference.",
     default="llama32vi",
 )
 @click.option(
     "-d",
     "--dataset",
-    type=click.Choice(["WildFakeResampled", "", "ImageFolders"]),
+    type=click.Choice(SUPPORTED_DATASETS),
     help="The dataset to use for inference. If not specified, will read `--real_dir` and `--fake_dir`.",
     default="",
 )
 @click.option(
     "--real_dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    type=click.Path(file_okay=False, dir_okay=True),
     help="The directory containing real images. Must be specified if `--dataset` is not provided.",
     default="",
 )
 @click.option(
     "--fake_dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    type=click.Path(file_okay=False, dir_okay=True),
     help="The directory containing fake images. Must be specified if `--dataset` is not provided.",
     default="",
 )
@@ -167,7 +200,18 @@ def load_samples(dataset: str, count: int, real_dir: Path | None=None, fake_dir:
     is_flag=True,
     help="Continue evaluation from a previous run if the output file exists.",
 )
-def infer(prompt, model, dataset, count, log_id, output, continue_eval, real_dir, fake_dir, seed):
+def infer(
+    prompt,
+    model,
+    dataset,
+    count,
+    log_id,
+    output,
+    continue_eval,
+    real_dir,
+    fake_dir,
+    seed,
+):
     """
     This script evaluates the performance of a multimodal language model (MLLM) classifier on a dataset of real and fake images.
 
@@ -233,7 +277,7 @@ def infer(prompt, model, dataset, count, log_id, output, continue_eval, real_dir
         dataset = "ImageFolders"
         real_samples, fake_samples = load_samples(dataset, count, real_dir, fake_dir)
     else:
-        real_samples, fake_samples = load_samples(dataset, count)        
+        real_samples, fake_samples = load_samples(dataset, count)
     if continue_eval:
         if output_path.exists():
             continue_df = pd.read_csv(output_path)
@@ -293,6 +337,48 @@ def infer(prompt, model, dataset, count, log_id, output, continue_eval, real_dir
     classifier.evaluate(
         output_path=f"outputs/{readable_output_name}", continue_from=continue_df
     )
+
+
+def guess_experiment_setup_from_path(path: Path) -> tuple[str, str, str, int]:
+    name = path.stem
+
+    # Check if the name is in the format of `dataset-count_model_prompt`
+    # 1. match dataset from SUPPORTED_DATASETS
+    def match_and_remove(full_str, sub_str) -> str:
+        if full_str.startswith(sub_str + "-") or full_str.startswith(sub_str + "_"):
+            return full_str[len(sub_str) + 1 :]
+        return full_str
+    dataset = ""
+    for ds in SUPPORTED_DATASETS:
+        new_name = match_and_remove(name, ds)
+        if new_name != name:
+            dataset = ds
+            name = new_name
+            break
+    else:
+        logger.warning("Could not determine dataset from the name: {}", name)
+    # 2. match count
+    count = 0
+    count_str = re.search(r"^(\d+)_", name)
+    if count_str:
+        count = int(count_str.group(1))
+        name = name[count_str.end():]
+    else:
+        logger.warning("Could not determine count from the name: {}", name)
+    # 3. match model from SUPPORTED_MODELS
+    model = ""
+    supported_models_sorted = sorted(SUPPORTED_MODELS, key=len, reverse=True)
+    for m in supported_models_sorted:
+        new_name = match_and_remove(name, m)
+        if new_name != name:
+            model = m
+            name = new_name
+            break
+    else:
+        logger.warning("Could not determine model from the name: {}", name)
+    # 4. prompt is the remaining part
+    prompt = name
+    return dataset, model, prompt, count
 
 
 def doc_writer(experiment_name: str) -> None:
@@ -379,20 +465,54 @@ def doc_writer(experiment_name: str) -> None:
     logger.success(
         "Saved the experiment results to outputs/{}.md", real_experiment_name
     )
+    d_, m_, p_, c_ = guess_experiment_setup_from_path(Path(real_experiment_name))
+    return {
+        "experiment_name": real_experiment_name,
+        "dataset": d_,
+        "model": m_,
+        "prompt": p_,
+        "count": c_,
+        "output_path": f"outputs/{real_experiment_name}.md",
+        "total_images": total_images,
+        "count_real": count_real,
+        "count_fake": count_fake,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "real_accuracy": real_accuracy,
+        "fake_accuracy": fake_accuracy,
+        "fails": fails,
+    }
 
 
 @click.command()
 @click.argument("experiment_name", type=str, default="all")
-def doc(experiment_name):
+@click.option(
+    "-s",
+    "--summarize_to",
+    type=click.Path(file_okay=True, dir_okay=False),
+    help="Summarize the results to a CSV file.",
+    default=None,
+)
+def doc(experiment_name, summarize_to):
     """
     Prints the metrics for a given experiment, and then creates a markdown file that shows the image, label, prediction and model response in a tabular format.
 
     EXPERIMENT_NAME: The name of the experiment to compute the metrics for. You may use a CSV path instead of an experiment name. By default, the script will look for the CSV file under `outputs/`.
     """
     if experiment_name == "all":
+        res = {}
         for path in Path("outputs/").rglob("*.csv"):
-            doc_writer(path)
+            res[path.stem] = doc_writer(path)
+        if summarize_to:
+            df = pd.DataFrame.from_dict(res, orient="index")
+            df.to_csv(summarize_to)
+            logger.success("Summarized the results to {}", summarize_to)
         return
+    if summarize_to:
+        logger.warning(
+            "Summarizing to a CSV file is not supported for documenting singular experiment. Ignoring the `summarize_to` option."
+        )
     doc_writer(experiment_name)
 
 
