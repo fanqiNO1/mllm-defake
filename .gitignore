@@ -1,0 +1,14 @@
+secrets
+trash
+local
+outputs
+tools
+.vscode
+__pycache__
+*.pyc
+logs
+decider/images/real/*
+decider/images/fake/*
+WildFakeResampled
+run.ps1
+run.sh

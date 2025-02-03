@@ -1,0 +1,51 @@
+[project]
+name = "mllm_defake"
+version = "0.1.0"
+description = 'A flexible & scalable MLLM-based AIGC detection pipeline'
+readme = {"file" = "readme.md", "content-type" = "text/markdown"}
+requires-python = ">=3.10"
+license = "Apache-2.0 OR MIT"
+authors = [
+    { name = "Kunologist", email = "jiyikun2002@gmail.com" },
+]
+maintainers = [
+    { name = "Kunologist", email = "jiyikun2002@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+]
+dependencies = [
+    "click>=8.0.1",
+    "orjson",
+    "pandas>=2",
+    "numpy>=2",
+    "loguru",
+    "tqdm",
+    "openai",
+    "requests",
+    "scikit-learn>=0.21.0",
+    "Pillow",
+    "tabulate",
+    "opencv-python"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "isort", "pytest-cov"]
+
+[project.scripts]
+mllmdf = "mllm_defake.cli:main_cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/docs",
+    "/dist",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mllm_defake"]

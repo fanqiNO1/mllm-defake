@@ -1,0 +1,33 @@
+{
+    "format_version": "3",
+    "revision": "1",
+    "name": "fake_one_shot",
+    "conversations": [
+        {
+            "id": "one_shot",
+            "decorators": [
+                "fake_one_shot.v1"
+            ],
+            "payload": [
+                [
+                    "system",
+                    "You are an image defake professionist. The user will ask you about whether an image is real or generated."
+                ],
+                [
+                    "user",
+                    "Is this image real or fake? Why? (Image omitted due to system limitations)"
+                ],
+                [
+                    "assistant",
+                    "{one_shot_response}"
+                ],
+                [
+                    "user",
+                    "Is this image real or fake? Why?",
+                    "{image_url}"
+                ]
+            ],
+            "response_var_name": "result"
+        }
+    ]
+}
