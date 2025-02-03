@@ -39,6 +39,7 @@ class OpenAICompat(VLLM):
             model=self.model_name,
             messages=messages,
             max_tokens=1000,
+            timeout=120
         )
         return response.choices[0].message.content
 
