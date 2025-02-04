@@ -9,7 +9,7 @@ from loguru import logger
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from tqdm.auto import tqdm
 
-from mllm_defake.utils import encode_image_to_base64, pprint_messages_payload
+from mllm_defake.utils import encode_image_to_base64
 from mllm_defake.vllms import VLLM
 
 warnings.filterwarnings("ignore")
