@@ -242,6 +242,9 @@ def infer(
         continue_eval,
     )
 
+    # Load prompt
+    prompt = find_prompt_file(prompt)
+
     # Determine output path
     if not output:
         readable_output_name = "{dataset}-{count}_{model}_{prompt}{log_id}.csv".format(
@@ -262,8 +265,7 @@ def infer(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.info("Will save the output to {}", output_path.resolve())
 
-    # Load model and prompt
-    prompt = find_prompt_file(prompt)
+    # Load model
     model = load_model(model)
 
     # Check for existing results if continuing
