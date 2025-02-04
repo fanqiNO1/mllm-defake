@@ -161,8 +161,6 @@ class MLLMClassifier:
                             "content": r(content),
                         }
                     )
-            if i == 0:
-                logger.info(pprint_messages_payload(messages))
             response = self.model.infer_raw(messages)
             cache[conv["response_var_name"]] = response
         return cache["result"]
