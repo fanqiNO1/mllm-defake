@@ -243,7 +243,17 @@ def infer(
     )
 
     # Load prompt
-    prompt = find_prompt_file(prompt)
+    try:
+        prompt = find_prompt_file(prompt)
+    except FileNotFoundError as e:
+        logger.error(e)
+        sys.exit(1)
+    except orjson.JSONDecodeError as e:
+        logger.error("Invalid JSON found for prompt `{}`: {}", prompt, e)
+        sys.exit(1)
+    except Exception as e:
+        logger.error("Error loading prompt `{}`: {}", prompt, e)
+        sys.exit(1)
 
     # Determine output path
     if not output:
