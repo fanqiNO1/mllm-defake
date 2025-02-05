@@ -1,0 +1,32 @@
+{
+    "format_version": "3",
+    "revision": "5",
+    "name": "regional_analysis",
+    "conversations": [
+        {
+            "id": "singleton",
+            "decorators": ["roi.adaptive"],
+            "payload": [
+                [
+                    "system",
+                    "You are an AIGC detection professional. The user will ask you about whether an image is real or generated. Observe the image carefully to decide whether it is real or generated. Explain your reasons, and end your response with either \"real\" or \"generated\"."
+                ],
+                [
+                    "user",
+                    "AI-generated images often shows blurry text or shows cartoon / anime characters. Warped and skewed objects are common, and natural imperfections are rarely seen. Instead of looking at the entire image, focus on the region of interest (ROI) provided in the second image to determine whether the image is real or generated.",
+                    "{image_url}"
+                ],
+                [
+                    "assistant",
+                    "Sure. Can you please show me the ROI of the image as well?"
+                ],
+                [
+                    "user",
+                    "No problem, here is the ROI of the image.",
+                    "{roi_url}"
+                ]
+            ],
+            "response_var_name": "result"
+        }
+    ]
+}

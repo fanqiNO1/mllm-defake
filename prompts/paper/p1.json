@@ -29,7 +29,7 @@
                 ],
                 [
                     "user",
-                    "Good job. Now, please indicate whether is this image real or generated based on the observations above. End your response with either \"real\" or \"generated\".",
+                    "Good job. Now, please indicate whether is this image real or generated based on the observations above. End your response with either \"real\" or \"generated\". For your info, an image with clear text or clean graphs should always be considered 'real'.",
                     "{image_url}"
                 ]
             ],
