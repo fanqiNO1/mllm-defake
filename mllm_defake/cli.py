@@ -336,7 +336,7 @@ def infer(
     if job_split is not None:
         try:
             m, n = map(int, job_split.split("/"))
-            if m < 0 or n < 1 or m >= n:
+            if m < 0 or n < 1 or m > n:
                 raise ValueError("Invalid job split.")
             real_start_index, real_end_index = (
                 len(real_samples) * (m - 1) // n,
