@@ -15,7 +15,7 @@ from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
 from mllm_defake.vllms import VLLM
 
 SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llavacot", "qvq"]
-SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", ""]
+SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", "WildFakeResampled20K", ""]
 
 
 def find_prompt_file(prompt: str) -> dict:
@@ -86,24 +86,10 @@ def load_samples(
         from mllm_defake.defake_dataset import WildFakeResampled
 
         dataset = WildFakeResampled()
-        real_samples, fake_samples = dataset.list_images()
-        if count < len(real_samples):
-            real_samples = random.sample(real_samples, count)
-            logger.debug(
-                f"Sampling {count} / {len(real_samples)} real samples from {dataset}"
-            )
-        if count < len(fake_samples):
-            fake_samples = random.sample(fake_samples, count)
-            logger.debug(
-                f"Sampling {count} / {len(fake_samples)} fake samples from {dataset}"
-            )
-        logger.info(
-            "Loaded {} real samples and {} fake samples from {}",
-            len(real_samples),
-            len(fake_samples),
-            dataset,
-        )
-        return real_samples, fake_samples
+    elif dataset == "WildFakeResampled20K":
+        from mllm_defake.defake_dataset import WildFakeResampled
+
+        dataset = WildFakeResampled("./WildFakeResampled20K")
     elif dataset == "ImageFolders":
         from mllm_defake.defake_dataset import ImageFolders
 
@@ -112,26 +98,26 @@ def load_samples(
                 "If `--dataset` is empty, `--real_dir` and `--fake_dir` must be specified."
             )
         dataset = ImageFolders(real_dir, fake_dir)
-        real_samples, fake_samples = dataset.list_images()
-        if count < len(real_samples):
-            real_samples = random.sample(real_samples, count)
-            logger.debug(
-                f"Sampling {count} / {len(real_samples)} real samples from {dataset}"
-            )
-        if count < len(fake_samples):
-            fake_samples = random.sample(fake_samples, count)
-            logger.debug(
-                f"Sampling {count} / {len(fake_samples)} fake samples from {dataset}"
-            )
-        logger.info(
-            "Loaded {} real samples and {} fake samples from {}",
-            len(real_samples),
-            len(fake_samples),
-            dataset,
-        )
-        return real_samples, fake_samples
     else:
         raise ValueError(f"Invalid dataset: {dataset}")
+    real_samples, fake_samples = dataset.list_images()
+    if count < len(real_samples):
+        real_samples = random.sample(real_samples, count)
+        logger.debug(
+            f"Sampling {count} / {len(real_samples)} real samples from {dataset}"
+        )
+    if count < len(fake_samples):
+        fake_samples = random.sample(fake_samples, count)
+        logger.debug(
+            f"Sampling {count} / {len(fake_samples)} fake samples from {dataset}"
+        )
+    logger.info(
+        "Loaded {} real samples and {} fake samples from {}",
+        len(real_samples),
+        len(fake_samples),
+        dataset,
+    )
+    return real_samples, fake_samples
 
 
 @click.command()
@@ -199,6 +185,18 @@ def load_samples(
     is_flag=True,
     help="Continue evaluation from a previous run if the output file exists.",
 )
+@click.option(
+    "--real_only",
+    "real_only",
+    is_flag=True,
+    help="If set, only evaluate on real samples.",
+)
+@click.option(
+    "--fake_only",
+    "fake_only",
+    is_flag=True,
+    help="If set, only evaluate on fake samples.",
+)
 def infer(
     prompt,
     model,
@@ -210,6 +208,8 @@ def infer(
     real_dir,
     fake_dir,
     seed,
+    real_only,
+    fake_only,
 ):
     """
     This script evaluates the performance of a multimodal language model (MLLM) classifier on a dataset of real and fake images.
@@ -231,16 +231,8 @@ def infer(
     # Setup logging
     log_file = f"logs/{log_id}.log" if log_id else "logs/main.log"
     logger.add(log_file, rotation="2 MB", backtrace=True, diagnose=True)
-    logger.debug(
-        "Starting MLLM classifier with prompt={}, model={}, dataset={}, count={}, log_id={}, output={}, continue={}",
-        prompt,
-        model,
-        dataset,
-        count,
-        log_id,
-        output,
-        continue_eval,
-    )
+    cli_call = " ".join(sys.argv)
+    logger.debug("Hello world! Inference started with: {}", cli_call)
 
     # Load prompt
     try:
@@ -326,6 +318,14 @@ def infer(
             )
     else:
         logger.info("Starting evaluation from scratch.")
+    
+    if real_only and fake_only:
+        logger.error("Cannot evaluate on both real and fake samples only.")
+        sys.exit(1)
+    if real_only:
+        fake_samples = []
+    if fake_only:
+        real_samples = []
 
     classifier = MLLMClassifier(prompt, model, real_samples, fake_samples)
     if not output:
