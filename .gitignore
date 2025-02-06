@@ -9,6 +9,6 @@ __pycache__
 logs
 decider/images/real/*
 decider/images/fake/*
-WildFakeResampled
+WildFakeResampled*
 run.ps1
 run.sh
