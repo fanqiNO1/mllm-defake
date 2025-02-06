@@ -316,7 +316,6 @@ def infer(
                 len(real_samples),
                 len(fake_samples),
             )
-            logger.info("Continuing evaluation from {}", output_path)
         else:
             logger.warning(
                 "Output file not found for continuing evaluation, restarting from scratch."
