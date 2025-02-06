@@ -312,7 +312,7 @@ def infer(
                 :reduce_count_fakes
             ]
             logger.info(
-                "Will evaluate on {} real and {} fake samples",
+                "{} real and {} fake samples remaining to be processed",
                 len(real_samples),
                 len(fake_samples),
             )
@@ -327,8 +327,10 @@ def infer(
         logger.error("Cannot evaluate on both real and fake samples only.")
         sys.exit(1)
     if real_only:
+        logger.info("Dropped fake samples for real-only evaluation.")
         fake_samples = []
     if fake_only:
+        logger.info("Dropped real samples for fake-only evaluation.")
         real_samples = []
 
     if job_split is not None:
@@ -347,7 +349,7 @@ def infer(
             real_samples = real_samples[real_start_index:real_end_index]
             fake_samples = fake_samples[fake_start_index:fake_end_index]
             logger.info(
-                "Job split completed: {}/{} - Real samples: {}-{}, Fake samples: {}-{}",
+                "Job split {}/{} - Real samples: {}-{}, Fake samples: {}-{}",
                 m,
                 n,
                 real_start_index,
@@ -376,7 +378,7 @@ def infer(
             readable_output_name = f"{output}.csv"
             readable_output_path = Path("outputs") / readable_output_name
     readable_output_path.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Starting evaluation with output: {}", readable_output_path)
+    logger.success("Starting evaluation with output: {}", readable_output_path)
     classifier.evaluate(
         output_path=f"outputs/{readable_output_name}", continue_from=continue_df
     )
