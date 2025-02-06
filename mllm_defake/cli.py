@@ -187,15 +187,19 @@ def load_samples(
 )
 @click.option(
     "--real_only",
-    "real_only",
     is_flag=True,
     help="If set, only evaluate on real samples.",
 )
 @click.option(
     "--fake_only",
-    "fake_only",
     is_flag=True,
     help="If set, only evaluate on fake samples.",
+)
+@click.option(
+    "--job_split",
+    type=str,
+    help="This parameter takes a `1/4`-like string to split the job into multiple parts. Index starts with zero and ends with `n` for `m/n`. This is meant to be used to spawn multiple jobs for the same dataset and prompt. Proceed with caution when pointing to the same output file, use with `-l` for custom log files.",
+    default=""
 )
 def infer(
     prompt,
@@ -210,6 +214,7 @@ def infer(
     seed,
     real_only,
     fake_only,
+    job_split,
 ):
     """
     This script evaluates the performance of a multimodal language model (MLLM) classifier on a dataset of real and fake images.
@@ -327,6 +332,34 @@ def infer(
     if fake_only:
         real_samples = []
 
+    if job_split is not None:
+        try:
+            m, n = map(int, job_split.split("/"))
+            if m < 0 or n < 1 or m >= n:
+                raise ValueError("Invalid job split.")
+            real_start_index, real_end_index = (
+                len(real_samples) * (m - 1) // n,
+                len(real_samples) * m // n,
+            )
+            fake_start_index, fake_end_index = (
+                len(fake_samples) * (m - 1) // n,
+                len(fake_samples) * m // n,
+            )
+            real_samples = real_samples[real_start_index:real_end_index]
+            fake_samples = fake_samples[fake_start_index:fake_end_index]
+            logger.info(
+                "Job split completed: {}/{} - Real samples: {}-{}, Fake samples: {}-{}",
+                m,
+                n,
+                real_start_index,
+                real_end_index,
+                fake_start_index,
+                fake_end_index,
+            )
+        except ValueError as e:
+            logger.error("Invalid job split: {}", e)
+            sys.exit(1)
+
     classifier = MLLMClassifier(prompt, model, real_samples, fake_samples)
     if not output:
         readable_output_name = "{dataset}-{count}_{model}_{prompt}{log_id}.csv".format(
@@ -334,7 +367,7 @@ def infer(
             count=count,
             model=model.short_name if hasattr(model, "short_name") else model,
             prompt=prompt["name"],
-            log_id=f"_{log_id} " if log_id else "",
+            log_id=f"_{log_id}" if log_id else "",
         )
         readable_output_path: Path = Path("outputs") / readable_output_name
     else:
