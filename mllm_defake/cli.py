@@ -122,6 +122,56 @@ def load_samples(
 
 @click.command()
 @click.option(
+    "-m",
+    "--model",
+    type=click.Choice(SUPPORTED_MODELS),
+    help="The model to use for inference.",
+    default="llama32vi",
+)
+@click.option(
+    "-p",
+    "--prompt",
+    help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details.",
+    default="prompts/v3/simple.json",
+)
+@click.argument("image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+def classify(model: str, prompt: str, image_path: str):
+    """
+    Classify a single image as real or fake using the specified model.
+    
+    IMAGE_PATH: Path to the image file to classify.
+    """
+    try:
+        # Load prompt & model
+        prompt_config = find_prompt_file(prompt)
+        model_instance = load_model(model)
+        
+        # Create classifier with single image
+        image_path = Path(image_path)
+        classifier = MLLMClassifier(prompt_config, model_instance, [], [])
+        
+        # Get prediction
+        pred = classifier.classify(image_path)
+        
+        # Map prediction to human-readable output
+        if pred == -1:
+            result = "unknown"
+        elif pred == 1:
+            result = "real"
+        else:
+            result = "fake"
+            
+        # Print result only (for easy command line usage)
+        print(result)
+        
+    except Exception as e:
+        logger.error(f"Error during classification: {str(e)}")
+        print("unknown")
+        sys.exit(1)
+
+
+@click.command()
+@click.option(
     "-p",
     "--prompt",
     help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details. If a name is given, the corresponding JSON file should be placed under `prompts/` or its subdirectories. Note that the name of the prompt file must be unique, otherwise the first match will be used.",
@@ -567,6 +617,7 @@ def main_cli():
     pass
 
 
+main_cli.add_command(classify)
 main_cli.add_command(infer)
 main_cli.add_command(doc)
 
