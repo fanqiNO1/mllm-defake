@@ -17,7 +17,7 @@ To use:
 ```bash
 # Run basic inference with GPT-4o-mini
 export OPENAI_API_KEY='sk-...'
-# 1. Classify a single image as real or fake (or unknown) using GPT-4o-mini
+# 1. Classify a single image as real or fake (or unknown) using GPT-4o-mini. Prints the result to the console.
 mllmdf classify demo/real/img118131.jpg --model gpt4omini
 # 2. Evaluate on a dataset containing real and fake images. Produces a CSV file with results under ./outputs
 mllmdf infer --model gpt4omini --real_dir demo/real --fake_dir demo/fake
@@ -39,7 +39,7 @@ The `mllmdf` entry point is at [`mllm_defake/cli.py`](mllm_defake/cli.py).
 The core of the package is the `MLLMClassifier` class in `mllm_defake/classifiers/mllm_classifier.py`. It provides:
 
 - Prompt-based classification using various MLLMs
-- Support for different model backends (GPT-4-Vision, self-hosted Llama, etc.)
+- Support for different model backends (GPT-4p-Vision, self-hosted Llama herd of models, etc.)
 - Evaluation metrics and result documentation
 - Decorator pattern for result post-processing
 
