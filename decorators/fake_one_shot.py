@@ -2,7 +2,9 @@ from mllm_defake.utils import encode_image_to_base64
 
 
 def v1(cache: dict) -> None:
-    cache["one_shot_response"] = '''The image showcases a beautifully restored classic GMC pickup truck, likely from the 1960s. The vehicle features a deep maroon paint job, a customized lowered stance, and large chrome wheels. The front grille and bumper are polished to a mirror-like shine, reflecting the surroundings. The hood has a subtle raised center section, adding to the aggressive yet classic aesthetic. The background consists of leafless trees, a concrete sidewalk, and some parked cars, indicating a late autumn or winter setting.
+    cache[
+        "one_shot_response"
+    ] = """The image showcases a beautifully restored classic GMC pickup truck, likely from the 1960s. The vehicle features a deep maroon paint job, a customized lowered stance, and large chrome wheels. The front grille and bumper are polished to a mirror-like shine, reflecting the surroundings. The hood has a subtle raised center section, adding to the aggressive yet classic aesthetic. The background consists of leafless trees, a concrete sidewalk, and some parked cars, indicating a late autumn or winter setting.
 
     1. **Real-World Imperfections** – This photograph contains natural reflections, minor inconsistencies in lighting, and real-world textures that AI-generated images often struggle to replicate perfectly. AI images usually have overly smooth or exaggerated reflections that may not align naturally.
 
@@ -16,4 +18,4 @@ def v1(cache: dict) -> None:
 
     Based on these observations, the image is likely a photograph of a real vehicle rather than a computer-generated rendering.
 
-    **Conclusion**: Real.'''
+    **Conclusion**: Real."""

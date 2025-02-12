@@ -134,25 +134,27 @@ def load_samples(
     help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details.",
     default="prompts/v3/simple.json",
 )
-@click.argument("image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument(
+    "image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False)
+)
 def classify(model: str, prompt: str, image_path: str):
     """
     Classify a single image as real or fake using the specified model.
-    
+
     IMAGE_PATH: Path to the image file to classify.
     """
     try:
         # Load prompt & model
         prompt_config = find_prompt_file(prompt)
         model_instance = load_model(model)
-        
+
         # Create classifier with single image
         image_path = Path(image_path)
         classifier = MLLMClassifier(prompt_config, model_instance, [], [])
-        
+
         # Get prediction
         pred = classifier.classify(image_path)
-        
+
         # Map prediction to human-readable output
         if pred == -1:
             result = "unknown"
@@ -160,10 +162,10 @@ def classify(model: str, prompt: str, image_path: str):
             result = "real"
         else:
             result = "fake"
-            
+
         # Print result only (for easy command line usage)
         print(result)
-        
+
     except Exception as e:
         logger.error(f"Error during classification: {str(e)}")
         print("unknown")
@@ -249,7 +251,7 @@ def classify(model: str, prompt: str, image_path: str):
     "--job_split",
     type=str,
     help="This parameter takes a `1/4`-like string to split the job into multiple parts. Index starts with zero and ends with `n` for `m/n`. This is meant to be used to spawn multiple jobs for the same dataset and prompt. Proceed with caution when pointing to the same output file, use with `-l` for custom log files.",
-    default=""
+    default="",
 )
 def infer(
     prompt,
@@ -372,7 +374,7 @@ def infer(
             )
     else:
         logger.info("Starting evaluation from scratch.")
-    
+
     if real_only and fake_only:
         logger.error("Cannot evaluate on both real and fake samples only.")
         sys.exit(1)

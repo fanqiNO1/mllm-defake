@@ -36,10 +36,7 @@ class OpenAICompat(VLLM):
 
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
         response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            max_tokens=1000,
-            timeout=120
+            model=self.model_name, messages=messages, max_tokens=1000, timeout=120
         )
         return response.choices[0].message.content
 

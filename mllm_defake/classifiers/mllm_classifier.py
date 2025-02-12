@@ -26,8 +26,8 @@ class MLLMClassifier:
         self,
         prompt: dict,
         model: VLLM,
-        real_samples: list[Path]=list(),
-        fake_samples: list[Path]=list(),
+        real_samples: list[Path] = list(),
+        fake_samples: list[Path] = list(),
     ):
         """
         Decorators should be a dictionary of decorator names and their corresponding callable functions that modifies the cache dict during inference. The callable functions should have the signature `def decorator(cache: dict) -> None`.
@@ -105,11 +105,13 @@ class MLLMClassifier:
         )  # For caching model responses within this classification job, keys should be `response_var_name` values
         # Initialize with preloaded cache
         cache["image_url"] = encode_image_to_base64(sample)
-        cache["label"] = "real" if (
-            label == 1 or label == True or sample in self.real_samples
-        ) else "fake" if (
-            label == 0 or label == False or sample in self.fake_samples
-        ) else "unknown"
+        cache["label"] = (
+            "real"
+            if (label == 1 or label == True or sample in self.real_samples)
+            else "fake"
+            if (label == 0 or label == False or sample in self.fake_samples)
+            else "unknown"
+        )
 
         def replace_string_with_cache(string: str) -> str:
             # Works like f-string, but uses cache values
@@ -183,7 +185,7 @@ class MLLMClassifier:
             return -1
         return 1 if last_real > last_fake else 0
 
-    def classify(self, sample: Path, label: int | bool=-1) -> int:
+    def classify(self, sample: Path, label: int | bool = -1) -> int:
         response = self.llm_query(sample, label)
         return self.postprocess(response)
 

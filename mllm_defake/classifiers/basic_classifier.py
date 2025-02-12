@@ -149,4 +149,3 @@ class FreqClassifier(BasicClassifier):
     def classify(self, sample: Path, label: int | bool) -> int:
         high_freq_content = self.high_freq_content(sample)
         return 1 if high_freq_content > 8.5 else 0
-    
