@@ -1,6 +1,6 @@
 {
     "format_version": "3",
-    "revision": "24",
+    "revision": "30",
     "name": "few_shot_combined",
     "conversations": [
         {
@@ -11,12 +11,11 @@
             "payload": [
                 [
                     "system",
-                    "You are an image defake professionist. The user will ask you about whether an image is real or generated."
+                    "You are an image defake professional. The user will ask you about whether an image is real or generated."
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why?",
-                    "{few_shot_image_url_0}"
+                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\"."
                 ],
                 [
                     "assistant",
@@ -24,8 +23,7 @@
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why?",
-                    "{few_shot_image_url_1}"
+                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\"."
                 ],
                 [
                     "assistant",

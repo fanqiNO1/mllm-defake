@@ -6,16 +6,17 @@
         {
             "id": "few_shot_combined",
             "decorators": [
-                "two_shot.v1"
+                "two_shot.v2"
             ],
             "payload": [
                 [
                     "system",
-                    "You are an image defake professional. The user will ask you about whether an image is real or generated."
+                    "You are an AI-generated image detection professional. The user will ask you about whether an image is real or generated. Reason about the image before the final output."
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\"."
+                    "Is this image real or generated? Why? Please end your response with \"real\" or \"generated\".",
+                    "{few_shot_image_url_0}"
                 ],
                 [
                     "assistant",
@@ -23,7 +24,8 @@
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\"."
+                    "Is this image real or generated? Why? Please end your response with \"real\" or \"generated\".",
+                    "{few_shot_image_url_1}"
                 ],
                 [
                     "assistant",
@@ -31,7 +33,7 @@
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\".",
+                    "Is this image real or generated? Why? Please end your response with \"real\" or \"generated\".",
                     "{image_url}"
                 ]
             ],
