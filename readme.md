@@ -4,16 +4,24 @@ This project implements a scalable Multi-modal Large Language Model (MLLM) based
 
 ## Quick Start
 
+To install:
+
 ```bash
 # Install the package
 git clone git@github.com:Gennadiyev/mllm-defake.git
 pip install -e ".[dev]"
+```
 
-# Run basic inference
+To use:
+
+```bash
+# Run basic inference with GPT-4o-mini
 export OPENAI_API_KEY='sk-...'
-mllmdf infer --model gpt4omini --real_dir demo/real --fake_dir demo/fake --count 3
-
-# Generate documentation for results
+# 1. Classify a single image as real or fake (or unknown) using GPT-4o-mini
+mllmdf classify demo/real/img118131.jpg --model gpt4omini
+# 2. Evaluate on a dataset containing real and fake images. Produces a CSV file with results under ./outputs
+mllmdf infer --model gpt4omini --real_dir demo/real --fake_dir demo/fake
+# 3. Generate a markdown report from the CSV file. Checks all CSV files under ./outputs
 mllmdf doc
 ```
 
@@ -23,33 +31,37 @@ Use `--help` to learn more about each command.
 
 The `mllmdf` entry point is at [`mllm_defake/cli.py`](mllm_defake/cli.py).
 
-### 1. MLLM Classifier
+### 1. Where actual evaluation procedures happen: `MLLMClassifier`
+
+> [!WARNING]  
+> To support a new MLLM, you may wish to edit the [`mllm_defake/vllms.py`](mllm_defake/vllms.py) file, not the `MLLMClassifier` class. Modify the `cli.py` to include the new model.
 
 The core of the package is the `MLLMClassifier` class in `mllm_defake/classifiers/mllm_classifier.py`. It provides:
 
-- Prompt-based classification using various MLLM models
+- Prompt-based classification using various MLLMs
 - Support for different model backends (GPT-4-Vision, self-hosted Llama, etc.)
 - Evaluation metrics and result documentation
 - Decorator pattern for result post-processing
 
 For external integrations, `MLLMClassifier.classify` can be used directly. It takes an image path (and label if desired) and returns a prediction.
 
-### 2. Visual Language Models (MLLMs)
+### 2. Implementing new MLLMs by editing `vllms.py`
 
-Located in `mllm_defake/vllms.py`, supported models include:
-- GPT-4-Vision (gpt4o)
-- GPT-4-Vision-Mini (gpt4omini)
-- Llama-3.2-Vision-Instruct (llama32vi)
-- Llama-3.2-Vision-CoT (llama32vcot)
-- QVQ Model (qvq)
+Currently, supported models include:
+- GPT-4o (`gpt4o`)
+- GPT-4o-Mini (`gpt4omini`)
+- [Llama-3.2-11B-Vision-Instruct](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct) (`llama32vi`)
+- [Llama-3.2V-11B-CoT](https://huggingface.co/Xkev/Llama-3.2V-11B-cot) (`llama32vcot`)
+- [QVQ-72B-Preview](https://huggingface.co/Qwen/QVQ-72B-Preview) (`qvq`)
 
 More models can be added by extending the base class to your needs.
 
-### 3. Prompt System
+> [!WARNING]  
+> The repository does NOT download or infer with the open-source models automatically. Use [`vllm`](https://github.com/vllm-project/vllm) to serve your own API server, and pass the URL to `BASE_URL` as environment variable.
 
-After months of iterations, lots of overhauls, and a few rewrites, the prompt system is now stable and ready for use. It allows for easy creation of prompts for different detectors, MLLMs and datasets. It is possible to use decorators to interact with the prompt system and modify the prompts using Python during runtime.
+### 3. Proudly presenting our prompt system
 
-The logic of prompt system is implemented within the `MLLMClassifier` class. You may define external decorators anywhere, `./decorators` will be automatically imported.
+After months of iterations, lots of overhauls and quite a few patches, the prompt system is now stable and ready for use. It allows for easy creation of prompts independent of MLLMs and datasets. It is possible to use decorators to interact with the prompt system and modify the prompts using Python during runtime.
 
 Here is a template to get you started:
 
@@ -71,11 +83,15 @@ Here is a template to get you started:
 }
 ```
 
+If `"result"` is specified as the response variable, it will be returned, in string format, as the result of the classification. A post-processing function is then used to convert the string to an integer value, where 0 is fake, 1 is real, -1 is unknown.
+
 For more complex prompts, please refer to the [`prompts`](prompts) directory.
+
+While the logic of prompt system is implemented within the `MLLMClassifier` class, decorators You may define external decorators anywhere, `./decorators` will be automatically imported.
 
 ### 4. API Key Conventions
 
-To mitigate the risk of exposing API keys, environment variables are used to store sensitive information. The variable names are hard-coded in the [`mllm_defake/cli.py`](mllm_defake/cli.py) file, mainly in `load_model` function.
+To mitigate the risk of exposing API keys, environment variables are used to store sensitive information. The env variable names are hard-coded in the [`mllm_defake/cli.py`](mllm_defake/cli.py) file, mainly in `load_model` function.
 
 ## License
 
