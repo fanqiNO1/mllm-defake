@@ -156,3 +156,7 @@ def pyramid(cache: dict) -> None:
     roi = find_roi_pyramid(image)
     roi_encoded = encode_image_to_base64(roi)
     cache["roi_url"] = roi_encoded
+
+
+def dinov2(cache: dict) -> None:
+    pass
