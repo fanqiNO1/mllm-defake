@@ -1,20 +1,18 @@
 {
     "format_version": "3",
-    "revision": "3",
-    "name": "reasoning",
+    "revision": "5",
+    "name": "common_sense_reasoning",
     "conversations": [
         {
-            "id": "reasoning_basic",
-            "decorators": [
-            ],
+            "id": "singleton",
             "payload": [
                 [
                     "system",
-                    "You are an AIGC detection professional. The user will ask you about whether an image is real or generated. Observe the image carefully to decide whether it is real or generated. Explain your reasons, and end your response with either \"real\" or \"generated\"."
+                    "You are an AIGC detection professional specializing in identifying logical inconsistencies and common sense violations in images."
                 ],
                 [
                     "user",
-                    "Is this image real or generated? First explain your reasons, and then end your response with either \"real\" or \"generated\".",
+                    "Please analyze this image for any violations of common sense or real-world logic. Consider:\n1. Physical proportions (e.g., number of fingers, limbs)\n2. Spatial relationships between objects, such as merged textures\n3. Natural world physics and rules, such as unnaturally bent fences\n4. Other logical inconsistencies in the scene\n\nExplain any inconsistencies you find. If you find many unexplainable inconsistencies, the image is likely generated. End your response with either \"real\" or \"generated\".",
                     "{image_url}"
                 ]
             ],

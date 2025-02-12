@@ -1,36 +1,55 @@
 {
     "format_version": "3",
     "revision": "12",
-    "name": "features_in_turns",
+    "name": "structural_analysis",
     "conversations": [
         {
-            "id": "singleton",
+            "id": "classification",
+            "decorators": [],
+            "payload": [
+                [
+                    "user",
+                    "What is the main subject depicted in the image? Answer with a short descriptive noun phrase, e.g., 'a red bus', 'a daisy'. Answer concisely.",
+                    "{image_url}"
+                ]
+            ],
+            "response_var_name": "class_name"
+        },
+        {
+            "id": "structure_finding",
             "decorators": [],
             "payload": [
                 [
                     "system",
-                    "You are an AIGC detection professional. The user will ask you about whether an image is real or generated. Observe the image carefully to decide whether it is real or generated. Explain your reasons, and end your response with either \"real\" or \"generated\"."
+                    "For the entity that the user specifies, you will be asked to describe the structure of the object. Structure can inlcude shape, body parts, physical attributes, etc. Answer concisely."
                 ],
                 [
                     "user",
-                    "What are some of the features that AI-generated images often have?"
-                ],
+                    "Please list the key components of {class_name}."
+                ]
+            ],
+            "response_var_name": "components"
+        },
+        {
+            "id": "finding_result",
+            "decorators": [],
+            "payload": [
                 [
-                    "assistant",
-                    "AI-generated images often have features such as unrealistic lighting, inconsistent shadows, unusual artifacts and distortions, too much or too little fine detail. Anime-style images are considered generated since they are not real photographs. Meanwhile, since generated images usually rely on natural language prompts, they may contain stereotypical content, such as a hen with red beak as red beak is a stereotype of hens, and thus likely to be generated. Plus, due to the nature of prompts, two different type of things never appear in the same image, such as a cat and a dog in the same image."
+                    "system",
+                    "You are an AI-generated image detection professional. You will be prompted to focus on the essential parts of the subject as provided by the user. Your ultimate goal is to determine whether the image is real or generated."
                 ],
                 [
                     "user",
-                    "Good job. What are some of the features that real images often have?"
-                ],
-                [
-                    "assistant",
-                    "Real photographs often has lens effects where the image is blurry at the edges, natural lighting and shadows and structural consistency. Photos rarely capture distorted or unrealistic artifacts. They are generally more realistic in color, texture and details."
-                ],
-                [
-                    "user",
-                    "Sure. And please answer: is this image real or generated? Why? End your response with either \"real\" or \"generated\".",
+                    "This image shows a {class_name}. Show me a list of its key components before you make your decision of whether the image is real or generated.",
                     "{image_url}"
+                ],
+                [
+                    "assistant",
+                    "Certainly. {class_name} typically has the following components:\n{components}"
+                ],
+                [
+                    "user",
+                    "Now examine the image for these structural inconsistencies:\n1. Repetitive patterns that are too uniform\n2. Missing essential components\n3. Incorrect object placement\n\nExplain any anomalies you find and conclude whether the image is real or generated. End your response with either \"real\" or \"generated\"."
                 ]
             ],
             "response_var_name": "result"

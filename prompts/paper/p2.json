@@ -5,7 +5,7 @@
     "conversations": [
         {
             "id": "singleton",
-            "decorators": ["roi.adaptive"],
+            "decorators": ["roi.dinov2"],
             "payload": [
                 [
                     "system",
@@ -13,16 +13,16 @@
                 ],
                 [
                     "user",
-                    "AI-generated images often shows blurry text or shows cartoon / anime characters. Warped and skewed objects are common, and natural imperfections are rarely seen. Instead of looking at the entire image, focus on the region of interest (ROI) provided in the second image to determine whether the image is real or generated.",
+                    "AI-generated images often shows warped and skewed objects. Natural imperfections are rarely seen. Instead of looking at the entire image, focus on the main object as ROI provided in the next image to determine whether the image is real or generated.",
                     "{image_url}"
                 ],
                 [
                     "assistant",
-                    "Sure. Can you please show me the ROI of the image as well?"
+                    "Sure. Can you please show me the ROI of the image? I will focus on the details."
                 ],
                 [
                     "user",
-                    "No problem, here is the ROI of the image.",
+                    "No problem, here is the ROI. Please indicate whether the image is real or generated based on the ROI. End your response with either \"real\" or \"generated\".",
                     "{roi_url}"
                 ]
             ],

@@ -1,37 +1,46 @@
 {
     "format_version": "3",
-    "revision": "24",
-    "name": "few_shot_combined",
+    "revision": "9",
+    "name": "stereotype_matching",
     "conversations": [
         {
-            "id": "few_shot_combined",
-            "decorators": [
-                "two_shot.v1"
+            "id": "classification",
+            "decorators": [],
+            "payload": [
+                [
+                    "user",
+                    "What is the main subject depicted in the image? Answer with a short descriptive noun phrase, e.g., 'a red bus', 'a daisy'. Answer concisely.",
+                    "{image_url}"
+                ]
             ],
+            "response_var_name": "class_name"
+        },
+        {
+            "id": "stereotype_analysis",
+            "decorators": [],
             "payload": [
                 [
                     "system",
-                    "You are an image defake professionist. The user will ask you about whether an image is real or generated."
+                    "You are an AI-generated image detection professional specializing in identifying stereotypical patterns and unusual uniformity in images. Answer concisely."
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why?"
-                ],
+                    "If an image shows {class_name}, what are some common stereotypes or patterns that you would expect to see in the image? List at least three."
+                ]
+            ],
+            "response_var_name": "stereotype_response"
+        },
+        {
+            "id": "finding_result",
+            "decorators": [],
+            "payload": [
                 [
-                    "assistant",
-                    "{few_shot_result_0}"
+                    "system",
+                    "You are an AI-generated image detection professional. You will be prompted to focus on the essential parts of the subject as provided by the user. Your ultimate goal is to determine whether the image is real or generated."
                 ],
                 [
                     "user",
-                    "Is this image real or fake? Why?"
-                ],
-                [
-                    "assistant",
-                    "{few_shot_result_1}"
-                ],
-                [
-                    "user",
-                    "Is this image real or fake? Why? Please end your response with \"real\" or \"fake\".",
+                    "This image shows {class_name}. Typically, it has the following stereotypes:\n{stereotype_response}\n\nExamine the image for the presence of these attributes. Explain any anomalies you find and conclude whether the image is real or generated. End your response with either \"real\" or \"generated\".",
                     "{image_url}"
                 ]
             ],

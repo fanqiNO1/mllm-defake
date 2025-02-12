@@ -1,0 +1,73 @@
+{
+    "format_version": "3",
+    "revision": "3",
+    "name": "fusion",
+    "conversations": [
+        {
+            "id": "fusion",
+            "decorators": [
+                "fusion.v1"
+            ],
+            "payload": [
+                [
+                    "system",
+                    "You are an synthetic image detection professional. The user will ask you about whether an image is real or generated. Use the previous responses effectively, combine the information, and make a decision."
+                ],
+                [
+                    "user",
+                    "{q1}"
+                ],
+                [
+                    "assistant",
+                    "{a1}"
+                ],
+                [
+                    "user",
+                    "{q2}"
+                ],
+                [
+                    "assistant",
+                    "{a2}"
+                ],
+                [
+                    "user",
+                    "{q3}"
+                ],
+                [
+                    "assistant",
+                    "{a3}"
+                ],
+                [
+                    "user",
+                    "{q4}"
+                ],
+                [
+                    "assistant",
+                    "{a4}"
+                ],
+                [
+                    "user",
+                    "{q5}"
+                ],
+                [
+                    "assistant",
+                    "{a5}"
+                ],
+                [
+                    "user",
+                    "{q6}"
+                ],
+                [
+                    "assistant",
+                    "{a6}"
+                ],
+                [
+                    "user",
+                    "Based on the previous responses, is this image real or fake?",
+                    "{image_url}"
+                ]
+            ],
+            "response_var_name": "result"
+        }
+    ]
+}
