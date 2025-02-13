@@ -14,3 +14,9 @@ run.ps1
 run.sh
 dist
 build
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.log
+*.log.*
