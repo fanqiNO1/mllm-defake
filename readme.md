@@ -61,6 +61,8 @@ More models can be added by extending the base class to your needs.
 
 ### 3. Proudly presenting our prompt system
 
+![Prompt system overview, explaining JSON structure](demo/prompt_breakdown.png)
+
 After months of iterations, lots of overhauls and quite a few patches, the prompt system is now stable and ready for use. It allows for easy creation of prompts independent of MLLMs and datasets. It is possible to use decorators to interact with the prompt system and modify the prompts using Python during runtime.
 
 Here is a template to get you started:
