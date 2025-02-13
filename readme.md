@@ -76,9 +76,8 @@ Here is a template to get you started:
             "id": "main",
             "response_var_name": "result",
             "payload": [
-                ["system", "You are analyzing an image..."],
-                ["user", "Please analyze this image:", "{image_url}"],
-                ["assistant", "Based on my analysis..."]
+                ["system", "You are analyzing an image. Is this image real or AI-generated?"],
+                ["user", "Please analyze this image. End your response with `real` or `fake`.", "{image_url}"],
             ]
         }
     ]
