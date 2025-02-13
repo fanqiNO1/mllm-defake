@@ -385,7 +385,7 @@ def infer(
         logger.info("Dropped real samples for fake-only evaluation.")
         real_samples = []
 
-    if job_split is not None:
+    if job_split is not None and job_split != "":
         try:
             m, n = map(int, job_split.split("/"))
             if m < 0 or n < 1 or m > n:
