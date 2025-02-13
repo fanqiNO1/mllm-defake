@@ -1,6 +1,6 @@
 {
     "format_version": "3",
-    "revision": "3",
+    "revision": "4",
     "name": "fusion",
     "conversations": [
         {
@@ -15,7 +15,7 @@
                 ],
                 [
                     "user",
-                    "{q1}"
+                    "Generated images often have blurry text, cartoon/anime elements, and warped objects, while real images typically show natural lens effects, consistent lighting/shadows, structural coherence, and importantly, clear text or clean graphs which are explicitly marked as indicators of real images. Please search for obvious defects in the image and make a decision based on the information provided."
                 ],
                 [
                     "assistant",
@@ -23,7 +23,7 @@
                 ],
                 [
                     "user",
-                    "{q2}"
+                    "Look closer at a specific part of the image. Examine these features within a specified ROI for a more accurate decision."
                 ],
                 [
                     "assistant",
@@ -31,7 +31,7 @@
                 ],
                 [
                     "user",
-                    "{q3}"
+                    "Please perform common sense reasoning. Analyze the image for violations of real-world logic and physics - such as incorrect body proportions, unnatural object relationships, physics violations, and logical inconsistencies."
                 ],
                 [
                     "assistant",
@@ -39,7 +39,7 @@
                 ],
                 [
                     "user",
-                    "{q4}"
+                    "Analyze the images using a few-shot learning approach. Consider the previous responses and make a decision based on the information provided."
                 ],
                 [
                     "assistant",
@@ -47,7 +47,7 @@
                 ],
                 [
                     "user",
-                    "{q5}"
+                    "Please analyze the structural components of the main subject in the image, first identifying what it is, then listing its key components, and finally examining it for structural inconsistencies like overly uniform patterns, missing parts, or incorrect placement."
                 ],
                 [
                     "assistant",
@@ -55,7 +55,7 @@
                 ],
                 [
                     "user",
-                    "{q6}"
+                    "Based on the class of the object and its stereotypes, do you believe that this image is generated or real? Provide reasons for your decision."
                 ],
                 [
                     "assistant",
