@@ -88,7 +88,7 @@ If `"result"` is specified as the response variable, it will be returned, in str
 
 For more complex prompts, please refer to the [`prompts`](prompts) directory.
 
-While the logic of prompt system is implemented within the `MLLMClassifier` class, decorators You may define external decorators anywhere, `./decorators` will be automatically imported.
+The logic of prompt system is implemented within the `MLLMClassifier` class. To interact the environment with Python, you can define your own decorators at `./decorators`.
 
 ### 4. API Key Conventions
 
