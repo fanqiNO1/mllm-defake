@@ -169,6 +169,7 @@ class MLLMClassifier:
                     )
             response = self.model.infer_raw(messages)
             cache[conv["response_var_name"]] = response
+            logger.debug(f"Sandbox cache[{conv['response_var_name']}] = {response}")
         return cache["result"]
 
     def postprocess(self, result: str) -> int:
