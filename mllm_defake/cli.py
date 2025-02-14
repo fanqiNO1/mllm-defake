@@ -130,7 +130,7 @@ def load_samples(
     "-p",
     "--prompt",
     help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details.",
-    default="prompts/v3/simple.json",
+    default="simple",
 )
 @click.argument(
     "image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False)
