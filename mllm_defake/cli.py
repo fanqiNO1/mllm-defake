@@ -42,8 +42,6 @@ def load_model(model: str) -> VLLM:
                 "OPENAI_API_KEY environment variable not set but required for GPT-4o."
             )
         proxy = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
-        if proxy is None:
-            logger.warning("Starting GPT-4o inference without a proxy.")
         return GPT4o(api_key=api_key, proxy=proxy)
     elif model == "gpt-4o-mini" or model == "gpt4omini":
         from mllm_defake.vllms import GPT4oMini
