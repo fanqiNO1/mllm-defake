@@ -78,18 +78,43 @@ class GPT4oMini(OpenAICompat):
 
 class Llama32VisionInstruct(OpenAICompat):
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+        super().__init__(api_key, proxy)
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
         self.client = OpenAI(
             api_key=api_key,
             http_client=self.http_client,
-            base_url=base_url if base_url else "http://127.0.0.1:8000",
+            base_url=base_url,
         )
         self.model_name = self.query_model_name()
         self.short_name = "llama32vi"
 
 
-class Qwen2VL(VLLM):
+class Llama32Vision(OpenAICompat):
+    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+        super().__init__(api_key, proxy)
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
+        self.api_key = api_key
+        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
+        self.client = OpenAI(
+            api_key=api_key,
+            http_client=self.http_client,
+            base_url=base_url,
+        )
+        self.model_name = self.query_model_name()
+        self.short_name = "llama32v"
+
+
+class Qwen2VLAPI(VLLM):
     def __init__(
         self,
         api_key: str,
@@ -132,13 +157,17 @@ class Qwen2VL(VLLM):
 class Llama32VisionCoT(OpenAICompat):
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
         super().__init__(api_key, proxy)
-
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
         self.client = OpenAI(
             api_key=api_key,
             http_client=self.http_client,
-            base_url=base_url if base_url else "http://127.0.0.1:8000",
+            base_url=base_url,
         )
         self.model_name = self.query_model_name()
         self.short_name = "llavacot"
@@ -154,13 +183,17 @@ class Llama32VisionCoT(OpenAICompat):
 class QVQ(OpenAICompat):
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
         super().__init__(api_key, proxy)
-
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
         self.client = OpenAI(
             api_key=api_key,
             http_client=self.http_client,
-            base_url=base_url if base_url else "http://127.0.0.1:8000",
+            base_url=base_url,
         )
         self.model_name = self.query_model_name()
         self.short_name = "qvq"
@@ -176,11 +209,55 @@ class QVQ(OpenAICompat):
 class InternVL25(OpenAICompat):
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
         super().__init__(api_key, proxy)
-
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
         self.client = OpenAI(
-            api_key=api_key, http_client=self.http_client, base_url=base_url
+            api_key=api_key,
+            http_client=self.http_client,
+            base_url=base_url,
         )
         self.model_name = self.query_model_name()
         self.short_name = "internvl25"
+
+
+class LLaVAOneVision(OpenAICompat):
+    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+        super().__init__(api_key, proxy)
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
+        self.api_key = api_key
+        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
+        self.client = OpenAI(
+            api_key=api_key,
+            http_client=self.http_client,
+            base_url=base_url,
+        )
+        self.model_name = self.query_model_name()
+        self.short_name = "onevision"
+
+
+class Qwen2VL(OpenAICompat):
+    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+        super().__init__(api_key, proxy)
+        if base_url is None:
+            logger.warning(
+                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+            )
+            base_url = "http://127.0.0.1:8000/v1"
+        self.api_key = api_key
+        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
+        self.client = OpenAI(
+            api_key=api_key,
+            http_client=self.http_client,
+            base_url=base_url,
+        )
+        self.model_name = self.query_model_name()
+        self.short_name = "qwen2vl"
