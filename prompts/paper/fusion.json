@@ -63,7 +63,7 @@
                 ],
                 [
                     "user",
-                    "Based on the previous responses, is this image real or fake? End your response with either \"real\" or \"fake\".",
+                    "Based on the previous responses, is this image real or generated? End your response with either \"real\" or \"generated\".",
                     "{image_url}"
                 ]
             ],
