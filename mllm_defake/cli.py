@@ -13,7 +13,17 @@ import mllm_defake
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
 from mllm_defake.vllms import VLLM
 
-SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llavacot", "qvq", "internvl25"]
+SUPPORTED_MODELS = [
+    "gpt4o",
+    "gpt4omini",
+    "llama32vi",
+    "llama32v",
+    "llavacot",
+    "qvq",
+    "internvl25",
+    "onevision",
+    "qwen2vl"
+]
 SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", "WildFakeResampled20K", ""]
 
 
@@ -60,6 +70,12 @@ def load_model(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return Llama32VisionInstruct(api_key=api_key, base_url=base_url)
+    elif model == "llama-3.2-vision" or model == "llama32v":
+        from mllm_defake.vllms import Llama32Vision
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
+        return Llama32Vision(api_key=api_key, base_url=base_url)
     elif model == "llama-3.2-vision-cot" or model == "llavacot":
         from mllm_defake.vllms import Llama32VisionCoT
 
@@ -72,12 +88,24 @@ def load_model(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return QVQ(api_key=api_key, base_url=base_url)
-    elif model == "internvl25":
+    elif model == "internvl-2.5" or model == "internvl25":
         from mllm_defake.vllms import InternVL25
 
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return InternVL25(api_key=api_key, base_url=base_url)
+    elif model == "onevision":
+        from mllm_defake.vllms import LLaVAOneVision
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
+        return LLaVAOneVision(api_key=api_key, base_url=base_url)
+    elif model == "qwen2vl":
+        from mllm_defake.vllms import Qwen2VL
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
+        return Qwen2VL(api_key=api_key, base_url=base_url)
     else:
         raise ValueError(f"Invalid model: {model}")
 
@@ -262,6 +290,12 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
     help="This parameter takes a `1/4`-like string to split the job into multiple parts. Index starts with zero and ends with `n` for `m/n`. This is meant to be used to spawn multiple jobs for the same dataset and prompt. Proceed with caution when pointing to the same output file, use with `-l` for custom log files.",
     default="",
 )
+@click.option(
+    "-v",
+    "--verbose",
+    help="Verbose. Set if you would like to see every step of the classification process, including the model's full response.",
+    is_flag=True,
+)
 def infer(
     prompt,
     model,
@@ -276,6 +310,7 @@ def infer(
     real_only,
     fake_only,
     job_split,
+    verbose,
 ):
     """
     This script evaluates the performance of a multimodal language model (MLLM) classifier on a dataset of real and fake images.
@@ -382,6 +417,11 @@ def infer(
                 "Output file not found for continuing evaluation, restarting from scratch."
             )
     else:
+        if output_path.exists():
+            logger.warning(
+                "Output file already exists at {}. Use `--continue` to continue evaluation.", output_path
+            )
+            input("Overwrite the file? Press Enter to continue, or Ctrl+C to exit.")
         logger.info("Starting evaluation from scratch.")
 
     if real_only and fake_only:
@@ -441,7 +481,9 @@ def infer(
     readable_output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.success("Starting evaluation with output: {}", readable_output_path)
     classifier.evaluate(
-        output_path=f"outputs/{readable_output_name}", continue_from=continue_df
+        output_path=f"outputs/{readable_output_name}",
+        continue_from=continue_df,
+        should_print_response=verbose,
     )
 
 
@@ -497,7 +539,7 @@ def doc_writer(experiment_name: str) -> None:
         real_experiment_name = experiment_name
     else:
         raise FileNotFoundError(f"Experiment file not found for {experiment_name}")
-    
+
     # Filter out failed predictions
     count_before = len(df)
     df = df[df["pred"] != -1]
@@ -511,6 +553,7 @@ def doc_writer(experiment_name: str) -> None:
 
     # Calculate metrics
     from sklearn.metrics import accuracy_score, precision_score, recall_score
+
     accuracy = accuracy_score(df["label"], df["pred"])
     precision = precision_score(df["label"], df["pred"], zero_division=0)
     recall = recall_score(df["label"], df["pred"], zero_division=0)
@@ -538,9 +581,9 @@ def doc_writer(experiment_name: str) -> None:
     )
 
     # Split dataframe into correct and wrong predictions
-    df['correct'] = df['label'] == df['pred']
-    correct_df = df[df['correct']]
-    wrong_df = df[~df['correct']]
+    df["correct"] = df["label"] == df["pred"]
+    correct_df = df[df["correct"]]
+    wrong_df = df[~df["correct"]]
 
     total_images = len(df)
     count_real = df["label"].sum()
@@ -576,7 +619,7 @@ def doc_writer(experiment_name: str) -> None:
         if fails > 0:
             f.write(f"- *{fails} failed predictions were filtered out.*\n\n")
         f.write(f"```\n{metric_str}\n```\n\n")
-        
+
         # Write wrong predictions first
         f.write("## Wrong Predictions\n\n")
         f.write("| Image | Label | Prediction | Full Response |\n")

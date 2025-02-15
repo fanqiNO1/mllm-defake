@@ -102,10 +102,21 @@ class MLLMClassifier:
     def llm_query(
         self, sample: Path, label: int | bool, should_print_response: bool = False
     ) -> str:
-        cache = (
-            {}
-        )  # For caching model responses within this classification job, keys should be `response_var_name` values
-        # Initialize with preloaded cache
+        """
+        Query the LLM model with the given sample and label.
+
+        This method processes the prompt and returns the raw response from the model.
+
+        The `sample` argument should be a Path object to the image file.
+
+        The `label` argument should be an integer (-1[unk], 0[fake] or 1[real]) or a boolean (False or True) indicating whether the sample is fake or real.
+
+        The `should_print_response` argument should be a boolean indicating whether the model response should be printed to the console. Intended for debugging purposes.
+        """
+        # For caching model responses within this classification job, keys should be `response_var_name` values
+        cache = {}
+        # Prefill cache with sample and label
+        cache["_image_path"] = sample
         cache["image_url"] = encode_image_to_base64(sample)
         cache["label"] = (
             "real"
@@ -113,7 +124,7 @@ class MLLMClassifier:
             else "fake"
             if (label == 0 or label == False or sample in self.fake_samples)
             else "unknown"
-        )
+        )  # Converts 0/1 to fake/real, and True/False to real/fake
 
         def replace_string_with_cache(string: str) -> str:
             # Works like f-string, but uses cache values
@@ -220,7 +231,10 @@ class MLLMClassifier:
             )
 
     def evaluate(
-        self, output_path: Path, continue_from: pd.DataFrame = None
+        self,
+        output_path: Path,
+        continue_from: pd.DataFrame = None,
+        should_print_response: bool = False,
     ) -> tuple[float, float, float]:
         if continue_from is not None:
             df = continue_from
@@ -253,7 +267,7 @@ class MLLMClassifier:
             pbar.set_description(f"Eval {sample.name[:19]}")
 
             try:
-                response = self.llm_query(sample, label)
+                response = self.llm_query(sample, label, should_print_response)
                 pred = self.postprocess(response)
                 if pred != -1:
                     y_true.append(label)
