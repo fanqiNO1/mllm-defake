@@ -8,13 +8,12 @@ import click
 import orjson
 import pandas as pd
 from loguru import logger
-from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 import mllm_defake
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
 from mllm_defake.vllms import VLLM
 
-SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llavacot", "qvq"]
+SUPPORTED_MODELS = ["gpt4o", "gpt4omini", "llama32vi", "llavacot", "qvq", "internvl25"]
 SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", "WildFakeResampled20K", ""]
 
 
@@ -73,6 +72,12 @@ def load_model(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return QVQ(api_key=api_key, base_url=base_url)
+    elif model == "internvl25":
+        from mllm_defake.vllms import InternVL25
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
+        return InternVL25(api_key=api_key, base_url=base_url)
     else:
         raise ValueError(f"Invalid model: {model}")
 
@@ -132,10 +137,16 @@ def load_samples(
     help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details.",
     default="simple",
 )
+@click.option(
+    "-v",
+    "--verbose",
+    help="Verbose. Set if you would like to see every step of the classification process, including the model's full response.",
+    is_flag=True,
+)
 @click.argument(
     "image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False)
 )
-def classify(model: str, prompt: str, image_path: str):
+def classify(model: str, prompt: str, image_path: str, verbose: bool):
     """
     Classify a single image as real or fake using the specified model.
 
@@ -151,7 +162,7 @@ def classify(model: str, prompt: str, image_path: str):
         classifier = MLLMClassifier(prompt_config, model_instance, [], [])
 
         # Get prediction
-        pred = classifier.classify(image_path)
+        pred = classifier.classify(image_path, -1, should_print_response=verbose)
 
         # Map prediction to human-readable output
         if pred == -1:
@@ -496,6 +507,7 @@ def doc_writer(experiment_name: str) -> None:
             "Filtered out {} failed predictions from the experiment",
             fails,
         )
+    from sklearn.metrics import accuracy_score, precision_score, recall_score
     accuracy = accuracy_score(df["label"], df["pred"])
     precision = precision_score(df["label"], df["pred"], zero_division=0)
     recall = recall_score(df["label"], df["pred"], zero_division=0)

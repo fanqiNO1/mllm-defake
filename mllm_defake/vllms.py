@@ -89,40 +89,6 @@ class Llama32VisionInstruct(OpenAICompat):
         self.short_name = "llama32vi"
 
 
-# @deprecated(reason="No public API available")
-class InternVL2Pro(VLLM):
-    def __init__(self, api_key: str, url: str, proxy: str = None):
-        super().__init__()
-        self.api_key = api_key
-        self.url = url
-        self.client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-
-    def infer(self, system_prompt: str, user_prompt: str, image_path: str) -> str:
-        # Prepare the file data for the request
-        files = [("files", open(image_path, "rb"))] if image_path else []
-
-        # Prepare the data payload
-        data = {
-            "question": f"{system_prompt}\n\n{user_prompt}",
-            "api_key": self.api_key,
-        }
-
-        try:
-            # Send the POST request to the InternVL2 API using httpx client
-            response = self.client.post(self.url, files=files, data=data)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                return response.json().get(
-                    "response", "No response key found in the JSON."
-                )
-            else:
-                return f"Error: {response.status_code}, {response.text}"
-
-        except httpx.RequestError as e:
-            return f"Request error: {e}"
-
-
 class Qwen2VL(VLLM):
     def __init__(
         self,
@@ -205,3 +171,16 @@ class QVQ(OpenAICompat):
             messages[0]["role"] = "user"
             messages[0]["content"] = [{"type": "text", "text": messages[0]["content"]}]
         return super().infer_raw(messages)
+
+
+class InternVL25(OpenAICompat):
+    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+        super().__init__(api_key, proxy)
+
+        self.api_key = api_key
+        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
+        self.client = OpenAI(
+            api_key=api_key, http_client=self.http_client, base_url=base_url
+        )
+        self.model_name = self.query_model_name()
+        self.short_name = "internvl25"
