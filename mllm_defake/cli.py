@@ -22,7 +22,7 @@ SUPPORTED_MODELS = [
     "qvq",
     "internvl25",
     "onevision",
-    "qwen2vl"
+    "qwen2vl",
 ]
 SUPPORTED_DATASETS = ["WildFakeResampled", "ImageFolders", "WildFakeResampled20K", ""]
 
@@ -419,7 +419,8 @@ def infer(
     else:
         if output_path.exists():
             logger.warning(
-                "Output file already exists at {}. Use `--continue` to continue evaluation.", output_path
+                "Output file already exists at {}. Use `--continue` to continue evaluation.",
+                output_path,
             )
             input("Overwrite the file? Press Enter to continue, or Ctrl+C to exit.")
         logger.info("Starting evaluation from scratch.")
