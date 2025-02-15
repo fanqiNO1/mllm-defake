@@ -497,6 +497,7 @@ def doc_writer(experiment_name: str) -> None:
         real_experiment_name = experiment_name
     else:
         raise FileNotFoundError(f"Experiment file not found for {experiment_name}")
+    
     # Filter out failed predictions
     count_before = len(df)
     df = df[df["pred"] != -1]
@@ -507,6 +508,8 @@ def doc_writer(experiment_name: str) -> None:
             "Filtered out {} failed predictions from the experiment",
             fails,
         )
+
+    # Calculate metrics
     from sklearn.metrics import accuracy_score, precision_score, recall_score
     accuracy = accuracy_score(df["label"], df["pred"])
     precision = precision_score(df["label"], df["pred"], zero_division=0)
@@ -524,7 +527,7 @@ def doc_writer(experiment_name: str) -> None:
         + " - Precision: {:.3f} %\n"
         + " - Recall: {:.3f} %\n"
         + " - Acc. on real images: {:.3f} %\n"
-        + " - Acc. on fake images: {:.3f} %\n"
+        + " - Acc. on fake images: {:.3f} %"
     ).format(
         real_experiment_name,
         accuracy * 100,
@@ -533,24 +536,19 @@ def doc_writer(experiment_name: str) -> None:
         real_accuracy * 100,
         fake_accuracy * 100,
     )
+
+    # Split dataframe into correct and wrong predictions
+    df['correct'] = df['label'] == df['pred']
+    correct_df = df[df['correct']]
+    wrong_df = df[~df['correct']]
+
     total_images = len(df)
     count_real = df["label"].sum()
     count_fake = total_images - count_real
     logger.info(metric_str)
-    with open(f"outputs/{real_experiment_name}.md", "w", encoding="utf-8") as f:
-        f.write(f"# Experiment Results - `{real_experiment_name}`\n\n")
-        f.write("## Metrics\n\n")
-        f.write(
-            f"- *{total_images} images, {count_real} real, {count_fake} generated.*\n\n"
-        )
-        if fails > 0:
-            f.write(f"- *{fails} failed predictions were filtered out.*\n\n")
-        f.write(f"```\n{metric_str}\n```\n\n")
-        f.write("## Results\n\n")
-        f.write("| Image | Label | Prediction | Full Response |\n")
-        f.write("| --- | --- | --- | --- |\n")
-        markdown_dir = Path("outputs/").resolve()
-        for i, row in df.iterrows():
+
+    def write_table_rows(f, df_subset, markdown_dir):
+        for i, row in df_subset.iterrows():
             image_name = Path(row["path"]).name
             image_path = Path(row["path"]).resolve()
             common_root = os.path.commonpath([image_path, markdown_dir])
@@ -568,8 +566,34 @@ def doc_writer(experiment_name: str) -> None:
             f.write(
                 f"| ![Image {image_name}]({rel_path_str}) | {gt} | {pred} | {response_edited} |\n"
             )
+
+    with open(f"outputs/{real_experiment_name}.md", "w", encoding="utf-8") as f:
+        f.write(f"# Experiment Results - `{real_experiment_name}`\n\n")
+        f.write("## Metrics\n\n")
+        f.write(
+            f"- *{total_images} images, {count_real} real, {count_fake} generated.*\n\n"
+        )
+        if fails > 0:
+            f.write(f"- *{fails} failed predictions were filtered out.*\n\n")
+        f.write(f"```\n{metric_str}\n```\n\n")
+        
+        # Write wrong predictions first
+        f.write("## Wrong Predictions\n\n")
+        f.write("| Image | Label | Prediction | Full Response |\n")
+        f.write("| --- | --- | --- | --- |\n")
+        markdown_dir = Path("outputs/").resolve()
+        write_table_rows(f, wrong_df, markdown_dir)
         f.write("\n")
+
+        # Write correct predictions
+        f.write("## Correct Predictions\n\n")
+        f.write("| Image | Label | Prediction | Full Response |\n")
+        f.write("| --- | --- | --- | --- |\n")
+        write_table_rows(f, correct_df, markdown_dir)
+        f.write("\n")
+
         f.write(f"Created by {mllm_defake.__name__} - `v{mllm_defake.__version__}`")
+
     logger.success(
         "Saved the experiment results to outputs/{}.md", real_experiment_name
     )
