@@ -99,7 +99,9 @@ class MLLMClassifier:
             raise ImportError(f"The function {decorator} could not be imported")
         decorator_func(cache)
 
-    def llm_query(self, sample: Path, label: int | bool) -> str:
+    def llm_query(
+        self, sample: Path, label: int | bool, should_print_response: bool = False
+    ) -> str:
         cache = (
             {}
         )  # For caching model responses within this classification job, keys should be `response_var_name` values
@@ -170,6 +172,10 @@ class MLLMClassifier:
             response = self.model.infer_raw(messages)
             cache[conv["response_var_name"]] = response
             logger.debug(f"Sandbox cache[{conv['response_var_name']}] = {response}")
+            if should_print_response:
+                logger.info(
+                    f"Response to conversation #{i} ({conv['id']}):\n{response}"
+                )
         return cache["result"]
 
     def postprocess(self, result: str) -> int:
@@ -186,8 +192,10 @@ class MLLMClassifier:
             return -1
         return 1 if last_real > last_fake else 0
 
-    def classify(self, sample: Path, label: int | bool = -1) -> int:
-        response = self.llm_query(sample, label)
+    def classify(
+        self, sample: Path, label: int | bool = -1, should_print_response: bool = False
+    ) -> int:
+        response = self.llm_query(sample, label, should_print_response)
         return self.postprocess(response)
 
     @staticmethod
