@@ -1,5 +1,5 @@
 import base64
-import imghdr
+import filetype
 import json
 from pathlib import Path
 
@@ -52,10 +52,10 @@ def encode_image_to_base64(image_path_or_array: str | Path | np.ndarray) -> str:
             raise FileNotFoundError(f"File not found: {image_path}")
         with open(image_path, "rb") as image_file:
             image_data = image_file.read()
-            image_type = imghdr.what(image_path)
+            image_type: filetype.Type = filetype.guess(image_data)
             if image_type:
                 base64_encoded_image = base64.b64encode(image_data).decode("utf-8")
-                return f"data:image/{image_type};base64,{base64_encoded_image}"
+                return f"data:{image_type.mime};base64,{base64_encoded_image}"
             else:
                 raise ValueError("Unsupported image format")
 
