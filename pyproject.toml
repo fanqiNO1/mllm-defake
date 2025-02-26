@@ -1,6 +1,6 @@
 [project]
 name = "mllm_defake"
-version = "0.4.0"
+version = "0.4.1"
 description = 'A flexible & scalable MLLM-based AIGC detection pipeline'
 readme = {"file" = "readme.md", "content-type" = "text/markdown"}
 requires-python = ">=3.10"
@@ -21,7 +21,8 @@ dependencies = [
     "scikit-learn>=0.21.0",
     "Pillow",
     "tabulate",
-    "opencv-python"
+    "opencv-python",
+    "filetype",
 ]
 
 [project.optional-dependencies]
