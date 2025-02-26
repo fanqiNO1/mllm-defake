@@ -24,15 +24,91 @@ class VLLM(ABC):
         """
         pass
 
+    @abstractmethod
+    def infer_raw(self, messages: list[dict[str, str]]) -> str:
+        """
+        This method sends a list of messages to the Vision-LLM API and returns the model's response. The definition of the actual payload may vary from model to model, with behaviors defined within the VLLM implementation.
 
-class OpenAICompat(VLLM):
-    def __init__(self, api_key: str, proxy: str = None):
+        @param messages: The payload to be sent to the Vision-LLM API, typically a list of dictionaries if using the OpenAI-compatible interface.
+
+        @return: The model's response to the messages. Always a string.
+        """
+        pass
+
+
+class Qwen2VLAPI(VLLM):
+    def __init__(
+        self,
+        api_key: str,
+        url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        proxy: str = None,
+    ):
         super().__init__()
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(api_key=api_key, http_client=self.http_client)
-        self.model_name = "gpt-4o"
-        self.short_name = "gpt4o"
+        self.client = OpenAI(
+            api_key=api_key, http_client=self.http_client, base_url=url
+        )
+        self.short_name = "qwen2vl"
+
+    def infer_raw(self, messages: list[dict[str, str]]) -> str:
+        response = self.client.chat.completions.create(
+            model="qwen-vl-max",
+            messages=messages,
+            max_tokens=1000,
+            timeout=120,
+        )
+        return response.choices[0].message.content
+
+    def infer(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        image_path: str,
+        max_tokens: int = 700,
+    ) -> str:
+        image_url = encode_image_to_base64(image_path)
+        response = self.client.chat.completions.create(
+            model="qwen-vl-max",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                },
+            ],
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content
+
+
+class OpenAICompat(VLLM):
+    def __init__(
+        self,
+        api_key: str | None = "mllm_defake_key",
+        proxy: str | None = None,
+        base_url: str | None = None,
+    ):
+        """
+        Initialize the OpenAICompat class of Vision-LLM models. Provide the API key and optionally a proxy URL. Will populate self.api_key, self.http_client, and self.client.
+
+        This class is meant to be used in conjunction with a self-hosted VLLM server instance. It also assumes that only one model is available on the server, otherwise the first model will be used, since VLLM may use folder names with trailing slashes as model names. However, this can be overridden by setting the model_name attribute after initializing this class (as is done in the GPT4o and GPT4oMini classes).
+
+        @param api_key: The API key for the VLLM server.
+        @param proxy: The proxy URL to use for the HTTP client, defaults to None.
+        @param base_url: The base URL for the VLLM server. If not provided, the default value (http://127.0.0.1:8000/v1) will be used.
+
+        @return: None
+        """
+        super().__init__()
+        self.api_key = api_key
+        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
+        self.client = OpenAI(
+            api_key=api_key, http_client=self.http_client, base_url=base_url
+        )
 
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
         response = self.client.chat.completions.create(
@@ -63,112 +139,72 @@ class OpenAICompat(VLLM):
 
 
 class GPT4o(OpenAICompat):
+    """
+    Implementation of GPT-4o Vision model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None):
+        # Initialize the parent class with the API key and proxy
         super().__init__(api_key, proxy)
+        # Set the specific model name for GPT-4o
         self.model_name = "gpt-4o"
         self.short_name = "gpt4o"
 
 
 class GPT4oMini(OpenAICompat):
+    """
+    Implementation of GPT-4o Mini Vision model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None):
+        # Initialize the parent class with the API key and proxy
         super().__init__(api_key, proxy)
+        # Set the specific model name for GPT-4o Mini
         self.model_name = "gpt-4o-mini"
         self.short_name = "gpt4omini"
 
 
 class Llama32VisionInstruct(OpenAICompat):
+    """
+    Implementation of Llama 3.2 Vision Instruct model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for Llama32VisionInstruct, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "llama32vi"
 
 
-class Llama32Vision(OpenAICompat):
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
-        if base_url is None:
-            logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
-            )
-            base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
-        self.model_name = self.query_model_name()
-        self.short_name = "llama32v"
-
-
-class Qwen2VLAPI(VLLM):
-    def __init__(
-        self,
-        api_key: str,
-        url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        proxy: str = None,
-    ):
-        super().__init__()
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key, http_client=self.http_client, base_url=url
-        )
-        self.short_name = "qwen2vl"
-
-    def infer(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        image_path: str,
-        max_tokens: int = 700,
-    ) -> str:
-        image_url = encode_image_to_base64(image_path)
-        response = self.client.chat.completions.create(
-            model="qwen-vl-max",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_prompt},
-                        {"type": "image_url", "image_url": {"url": image_url}},
-                    ],
-                },
-            ],
-            max_tokens=max_tokens,
-        )
-        return response.choices[0].message.content
-
-
 class Llama32VisionCoT(OpenAICompat):
+    """
+    Implementation of Llama 3.2 Vision Chain-of-Thought model.
+    Uses the OpenAI-compatible interface for inference with images.
+    Modifies system prompts to work with this specific model.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for Llama32VisionCoT, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "llavacot"
 
@@ -181,20 +217,23 @@ class Llama32VisionCoT(OpenAICompat):
 
 
 class QVQ(OpenAICompat):
+    """
+    Implementation of QVQ Vision model.
+    Uses the OpenAI-compatible interface for inference with images.
+    Modifies system prompts to work with this specific model.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for QVQ, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "qvq"
 
@@ -207,57 +246,63 @@ class QVQ(OpenAICompat):
 
 
 class InternVL25(OpenAICompat):
+    """
+    Implementation of InternVL 2.5 Vision model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for InternVL25, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "internvl25"
 
 
 class LLaVAOneVision(OpenAICompat):
+    """
+    Implementation of LLaVA-OneVision model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for LLaVAOneVision, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "onevision"
 
 
 class Qwen2VL(OpenAICompat):
+    """
+    Implementation of Qwen 2 Vision Language model.
+    Uses the OpenAI-compatible interface for inference with images.
+    """
+
     def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
-        super().__init__(api_key, proxy)
+        # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
-                "No base URL provided for {class_name}, assuming http://127.0.0.1:8000/v1"
+                "No base URL provided for Qwen2VL, assuming http://127.0.0.1:8000/v1"
             )
             base_url = "http://127.0.0.1:8000/v1"
-        self.api_key = api_key
-        self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key,
-            http_client=self.http_client,
-            base_url=base_url,
-        )
+
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
         self.model_name = self.query_model_name()
         self.short_name = "qwen2vl"

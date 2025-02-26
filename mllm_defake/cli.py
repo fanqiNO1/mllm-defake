@@ -17,7 +17,6 @@ SUPPORTED_MODELS = [
     "gpt4o",
     "gpt4omini",
     "llama32vi",
-    "llama32v",
     "llavacot",
     "qvq",
     "internvl25",
@@ -70,12 +69,6 @@ def load_model(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return Llama32VisionInstruct(api_key=api_key, base_url=base_url)
-    elif model == "llama-3.2-vision" or model == "llama32v":
-        from mllm_defake.vllms import Llama32Vision
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
-        return Llama32Vision(api_key=api_key, base_url=base_url)
     elif model == "llama-3.2-vision-cot" or model == "llavacot":
         from mllm_defake.vllms import Llama32VisionCoT
 
