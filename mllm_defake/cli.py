@@ -16,6 +16,7 @@ from mllm_defake.vllms import VLLM
 SUPPORTED_MODELS = [
     "gpt4o",
     "gpt4omini",
+    "gpt45",
     "llama32vi",
     "llavacot",
     "qvq",
@@ -63,6 +64,18 @@ def load_model(model: str) -> VLLM:
         if proxy is None:
             logger.warning("Starting GPT-4o-mini inference without a proxy.")
         return GPT4oMini(api_key=api_key, proxy=proxy)
+    elif model == "gpt-4.5-preview" or model == "gpt45":
+        from mllm_defake.vllms import GPT45
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY environment variable not set but required for GPT-4.5-preview."
+            )
+        proxy = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
+        if proxy is None:
+            logger.warning("Starting GPT-4.5-preview inference without a proxy.")
+        return GPT45(api_key=api_key, proxy=proxy)
     elif model == "llama-3.2-vision-instruct" or model == "llama32vi":
         from mllm_defake.vllms import Llama32VisionInstruct
 

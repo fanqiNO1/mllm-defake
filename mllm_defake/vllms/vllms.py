@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import httpx
+from loguru import logger
 from openai import OpenAI
 
 from mllm_defake.utils import encode_image_to_base64
@@ -98,8 +99,8 @@ class OpenAICompat(VLLM):
         This class is meant to be used in conjunction with a self-hosted VLLM server instance. It also assumes that only one model is available on the server, otherwise the first model will be used, since VLLM may use folder names with trailing slashes as model names. However, this can be overridden by setting the model_name attribute after initializing this class (as is done in the GPT4o and GPT4oMini classes).
 
         @param api_key: The API key for the VLLM server.
-        @param proxy: The proxy URL to use for the HTTP client, defaults to None.
-        @param base_url: The base URL for the VLLM server. If not provided, the default value (http://127.0.0.1:8000/v1) will be used.
+        @param proxy: The proxy URL to use for the HTTP client, defaults to None, which uses the default OpenAI httpx client.
+        @param base_url: The base URL for the VLLM server. If not provided, the default value of None will be used, and will likely send the requests to OpenAI servers.
 
         @return: None
         """
@@ -164,6 +165,16 @@ class GPT4oMini(OpenAICompat):
         # Set the specific model name for GPT-4o Mini
         self.model_name = "gpt-4o-mini"
         self.short_name = "gpt4omini"
+
+
+class GPT45(OpenAICompat):
+
+    def __init__(self, api_key: str, proxy: str = None):
+        # Initialize the parent class with the API key and proxy
+        super().__init__(api_key, proxy)
+        # Set the specific model name for GPT-4o Mini
+        self.model_name = "gpt-4.5-preview"
+        self.short_name = "gpt45"
 
 
 class Llama32VisionInstruct(OpenAICompat):
