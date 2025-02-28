@@ -28,19 +28,19 @@ end
 
 local function submit(imagePath, decision)
     -- To disable all submit actions, uncomment the following line.
-    -- return
-    local data = {
-        image = imagePath,
-        decision = decision,
-        username = getUsername()
-    }
-    local postData = urlEncode(data)
-    local baseUrl = "http://101.132.113.116:23343/api/v1/decider"
+    return
+    -- local data = {
+    --     image = imagePath,
+    --     decision = decision,
+    --     username = getUsername()
+    -- }
+    -- local postData = urlEncode(data)
+    -- local baseUrl = "http://101.132.113.116:23343/api/v1/decider"
 
-    local body, code, _ = http.request(baseUrl.."?"..postData)
-    if code ~= 200 then
-        love.window.showMessageBox("Error", "Failed to submit the decision.\nFile: " .. imagePath .. "\nDecision: " .. decision, "error")
-    end
+    -- local body, code, _ = http.request(baseUrl.."?"..postData)
+    -- if code ~= 200 then
+    --     love.window.showMessageBox("Error", "Failed to submit the decision.\nFile: " .. imagePath .. "\nDecision: " .. decision, "error")
+    -- end
 end
 
 return submit
