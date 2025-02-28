@@ -1,9 +1,9 @@
 import base64
-import filetype
 import json
 from pathlib import Path
 
 import cv2
+import filetype
 import numpy as np
 
 
