@@ -23,7 +23,6 @@ class VLLM(ABC):
 
         @return: The model's response to the user prompt. Always a string.
         """
-        pass
 
     @abstractmethod
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
@@ -34,7 +33,6 @@ class VLLM(ABC):
 
         @return: The model's response to the messages. Always a string.
         """
-        pass
 
 
 class Qwen2VLAPI(VLLM):

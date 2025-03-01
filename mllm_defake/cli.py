@@ -210,7 +210,7 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
         print(result)
 
     except Exception as e:
-        logger.error(f"Error during classification: {str(e)}")
+        logger.error(f"Error during classification: {e!s}")
         print("unknown")
         sys.exit(1)
 
@@ -479,12 +479,11 @@ def infer(
             log_id=f"_{log_id}" if log_id else "",
         )
         readable_output_path: Path = Path("outputs") / readable_output_name
+    elif output.endswith(".csv"):
+        readable_output_path = Path(output)
     else:
-        if output.endswith(".csv"):
-            readable_output_path = Path(output)
-        else:
-            readable_output_name = f"{output}.csv"
-            readable_output_path = Path("outputs") / readable_output_name
+        readable_output_name = f"{output}.csv"
+        readable_output_path = Path("outputs") / readable_output_name
     readable_output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.success("Starting evaluation with output: {}", readable_output_path)
     classifier.evaluate(

@@ -60,7 +60,7 @@ class MLLMClassifier:
         self.all_labels = [1] * len(real_samples) + [0] * len(
             fake_samples
         )  # Follows CNNDetection convention of 1=real, 0=fake
-        self.samples = list(zip(self.all_samples, self.all_labels))
+        self.samples = list(zip(self.all_samples, self.all_labels, strict=False))
         random.shuffle(self.samples)
 
     def get_decorator_func(self, decorator: str) -> callable:
@@ -70,11 +70,11 @@ class MLLMClassifier:
                 module_name, package="mllm_defake.decorators"
             )
             return getattr(module, func_name)
-        except ImportError as e:
+        except ImportError:
             try:
                 module = importlib.import_module(f"decorators.{module_name}")
                 return getattr(module, func_name)
-            except ImportError as e:
+            except ImportError:
                 try:
                     module = importlib.import_module(module_name)
                     return getattr(module, func_name)

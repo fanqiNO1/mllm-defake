@@ -112,11 +112,11 @@ class BasicClassifier:
             return 0.0, 0.0, 0.0
 
         # Calculate final metrics
-        accuracy = sum(1 for t, p in zip(y_true, y_pred) if t == p) / len(y_true)
-        precision = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1) / (
+        accuracy = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == p) / len(y_true)
+        precision = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
             sum(1 for p in y_pred if p == 1) + 1e-10
         )
-        recall = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1) / (
+        recall = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
             sum(1 for t in y_true if t == 1) + 1e-10
         )
 

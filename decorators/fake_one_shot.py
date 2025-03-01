@@ -1,4 +1,3 @@
-from mllm_defake.utils import encode_image_to_base64
 
 
 def v1(cache: dict) -> None:
