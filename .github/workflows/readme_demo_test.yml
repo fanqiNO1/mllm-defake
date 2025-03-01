@@ -41,8 +41,8 @@ jobs:
 
       - name: Install mllm_defake and hatch
         run: |
-          uv pip install --system -e .
           uv pip install --system hatch
+          uv pip install --system -e .
 
       - name: Run static analysis
         run: hatch fmt --check
@@ -53,11 +53,15 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.MLLM_DEFAKE_OPENAI_API_KEY }}
           COVERAGE_FILE: .coverage.${{ matrix.os }}-${{ matrix.python-version }}
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v2
-        with:
-          file: ${{ env.COVERAGE_FILE }}
-          flags: unittests
-          name: codecov-umbrella-${{ matrix.os }}-${{ matrix.python-version }}
-          fail_ci_if_error: true
+      - name: Build wheels
+        run: hatch build
       
+      - name: Upload wheels and source code as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+          overwrite: true
