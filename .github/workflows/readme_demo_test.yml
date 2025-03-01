@@ -59,7 +59,7 @@ jobs:
       - name: Upload wheels and source code as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist/*
           if-no-files-found: error
           retention-days: 30
