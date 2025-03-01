@@ -47,9 +47,7 @@ def load_model(model: str) -> VLLM:
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError(
-                "OPENAI_API_KEY environment variable not set but required for GPT-4o."
-            )
+            raise ValueError("OPENAI_API_KEY is required for GPT-4o.")
         proxy = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
         return GPT4o(api_key=api_key, proxy=proxy)
     elif model == "gpt-4o-mini" or model == "gpt4omini":
@@ -57,9 +55,7 @@ def load_model(model: str) -> VLLM:
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError(
-                "OPENAI_API_KEY environment variable not set but required for GPT-4o-mini."
-            )
+            raise ValueError("OPENAI_API_KEY is required for GPT-4o-mini.")
         proxy = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
         if proxy is None:
             logger.warning("Starting GPT-4o-mini inference without a proxy.")
@@ -69,9 +65,7 @@ def load_model(model: str) -> VLLM:
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError(
-                "OPENAI_API_KEY environment variable not set but required for GPT-4.5-preview."
-            )
+            raise ValueError("OPENAI_API_KEY is required for GPT-4.5-preview.")
         proxy = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
         if proxy is None:
             logger.warning("Starting GPT-4.5-preview inference without a proxy.")
@@ -186,6 +180,7 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
 
     IMAGE_PATH: Path to the image file to classify.
     """
+    log_file = "logs/classify.log"
     try:
         # Load prompt & model
         prompt_config = find_prompt_file(prompt)
@@ -220,7 +215,7 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
     "-p",
     "--prompt",
     help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details. If a name is given, the corresponding JSON file should be placed under `prompts/` or its subdirectories. Note that the name of the prompt file must be unique, otherwise the first match will be used.",
-    default="prompts/v3/simple.json",
+    default="simple",
 )
 @click.option(
     "-m",
@@ -442,32 +437,28 @@ def infer(
         real_samples = []
 
     if job_split is not None and job_split != "":
-        try:
-            m, n = map(int, job_split.split("/"))
-            if m < 0 or n < 1 or m > n:
-                raise ValueError("Invalid job split.")
-            real_start_index, real_end_index = (
-                len(real_samples) * (m - 1) // n,
-                len(real_samples) * m // n,
-            )
-            fake_start_index, fake_end_index = (
-                len(fake_samples) * (m - 1) // n,
-                len(fake_samples) * m // n,
-            )
-            real_samples = real_samples[real_start_index:real_end_index]
-            fake_samples = fake_samples[fake_start_index:fake_end_index]
-            logger.info(
-                "Job split {}/{} - Real samples: {}-{}, Fake samples: {}-{}",
-                m,
-                n,
-                real_start_index,
-                real_end_index,
-                fake_start_index,
-                fake_end_index,
-            )
-        except ValueError as e:
-            logger.error("Invalid job split: {}", e)
-            sys.exit(1)
+        m, n = map(int, job_split.split("/"))
+        if m < 0 or n < 1 or m > n:
+            raise ValueError("Invalid job split.")
+        real_start_index, real_end_index = (
+            len(real_samples) * (m - 1) // n,
+            len(real_samples) * m // n,
+        )
+        fake_start_index, fake_end_index = (
+            len(fake_samples) * (m - 1) // n,
+            len(fake_samples) * m // n,
+        )
+        real_samples = real_samples[real_start_index:real_end_index]
+        fake_samples = fake_samples[fake_start_index:fake_end_index]
+        logger.info(
+            "Job split {}/{} - Real samples: {}-{}, Fake samples: {}-{}",
+            m,
+            n,
+            real_start_index,
+            real_end_index,
+            fake_start_index,
+            fake_end_index,
+        )
 
     classifier = MLLMClassifier(prompt, model, real_samples, fake_samples)
     if not output:
@@ -571,19 +562,12 @@ def doc_writer(experiment_name: str) -> None:
     )
 
     metric_str = (
-        "Metrics {}\n"
-        + " - Overall Accuracy: {:.3f} %\n"
-        + " - Precision: {:.3f} %\n"
-        + " - Recall: {:.3f} %\n"
-        + " - Acc. on real images: {:.3f} %\n"
-        + " - Acc. on fake images: {:.3f} %"
-    ).format(
-        real_experiment_name,
-        accuracy * 100,
-        precision * 100,
-        recall * 100,
-        real_accuracy * 100,
-        fake_accuracy * 100,
+        f"Metrics {real_experiment_name}\n"
+        f" - Overall Accuracy: {accuracy * 100:.3f} %\n"
+        f" - Precision: {precision * 100:.3f} %\n"
+        f" - Recall: {recall * 100:.3f} %\n"
+        f" - Acc. on real images: {real_accuracy * 100:.3f} %\n"
+        f" - Acc. on fake images: {fake_accuracy * 100:.3f} %"
     )
 
     # Split dataframe into correct and wrong predictions
@@ -681,6 +665,8 @@ def doc(experiment_name, summarize_to):
 
     EXPERIMENT_NAME: The name of the experiment to compute the metrics for. You may use a CSV path instead of an experiment name. By default, the script will look for the CSV file under `outputs/`.
     """
+    log_file = "logs/doc.log"
+    logger.add(log_file, rotation="2 MB", backtrace=True, diagnose=True)
     if experiment_name == "all":
         res = {}
         for path in Path("outputs/").rglob("*.csv"):

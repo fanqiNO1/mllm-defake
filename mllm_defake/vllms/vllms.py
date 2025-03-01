@@ -39,8 +39,8 @@ class Qwen2VLAPI(VLLM):
     def __init__(
         self,
         api_key: str,
-        url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        proxy: str = None,
+        url: str | None = "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        proxy: str | None = None,
     ):
         super().__init__()
         self.api_key = api_key
@@ -143,7 +143,7 @@ class GPT4o(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None):
+    def __init__(self, api_key: str, proxy: str | None = None):
         # Initialize the parent class with the API key and proxy
         super().__init__(api_key, proxy)
         # Set the specific model name for GPT-4o
@@ -157,7 +157,7 @@ class GPT4oMini(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None):
+    def __init__(self, api_key: str, proxy: str | None = None):
         # Initialize the parent class with the API key and proxy
         super().__init__(api_key, proxy)
         # Set the specific model name for GPT-4o Mini
@@ -166,8 +166,7 @@ class GPT4oMini(OpenAICompat):
 
 
 class GPT45(OpenAICompat):
-
-    def __init__(self, api_key: str, proxy: str = None):
+    def __init__(self, api_key: str, proxy: str | None = None):
         # Initialize the parent class with the API key and proxy
         super().__init__(api_key, proxy)
         # Set the specific model name for GPT-4o Mini
@@ -181,7 +180,9 @@ class Llama32VisionInstruct(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
@@ -203,7 +204,9 @@ class Llama32VisionCoT(OpenAICompat):
     Modifies system prompts to work with this specific model.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
@@ -232,7 +235,9 @@ class QVQ(OpenAICompat):
     Modifies system prompts to work with this specific model.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
@@ -260,7 +265,9 @@ class InternVL25(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
@@ -281,7 +288,9 @@ class LLaVAOneVision(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(
@@ -302,7 +311,9 @@ class Qwen2VL(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(self, api_key: str, proxy: str = None, base_url: str = None):
+    def __init__(
+        self, api_key: str, proxy: str | None = None, base_url: str | None = None
+    ):
         # Set default base URL if none is provided
         if base_url is None:
             logger.warning(

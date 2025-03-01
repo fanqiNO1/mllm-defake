@@ -86,7 +86,7 @@ class MLLMClassifier:
                     )
                     raise ImportError(
                         f"Decorator module not found: {module_name} ({e})"
-                    )
+                    ) from e
 
     def decorate(self, cache: dict, decorator: str) -> None:
         """
@@ -120,9 +120,9 @@ class MLLMClassifier:
         cache["image_url"] = encode_image_to_base64(sample)
         cache["label"] = (
             "real"
-            if (label == 1 or label == True or sample in self.real_samples)
+            if (label == 1 or label is True or sample in self.real_samples)
             else "fake"
-            if (label == 0 or label == False or sample in self.fake_samples)
+            if (label == 0 or label is False or sample in self.fake_samples)
             else "unknown"
         )  # Converts 0/1 to fake/real, and True/False to real/fake
 
@@ -148,7 +148,7 @@ class MLLMClassifier:
                         }
                     )
                 elif role == "user":
-                    if len(payload_item) > 2:
+                    if len(payload_item) >= 3:
                         # The user message contains an image
                         messages.append(
                             {
@@ -240,7 +240,9 @@ class MLLMClassifier:
             df = continue_from
             processed_samples = set(df["path"].apply(Path))
             self.samples = [
-                (s, l) for s, l in self.samples if s not in processed_samples
+                (sample, label)
+                for sample, label in self.samples
+                if sample not in processed_samples
             ]
             write_mode = "a"
             logger.info(

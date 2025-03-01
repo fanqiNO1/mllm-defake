@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 import cv2
@@ -7,7 +8,7 @@ from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 
 
-class BasicClassifier:
+class BasicClassifier(ABC):
     def __init__(self, real_samples: list[Path], fake_samples: list[Path]) -> None:
         if not all(isinstance(x, Path) for x in real_samples):
             raise ValueError(
@@ -20,6 +21,7 @@ class BasicClassifier:
         self.real_samples = real_samples
         self.fake_samples = fake_samples
 
+    @abstractmethod
     def classify(self, sample: Path, label: int | bool) -> int:
         return 0  # For fake
 
@@ -65,7 +67,9 @@ class BasicClassifier:
             df = continue_from
             processed_samples = set(df["path"].apply(Path))
             self.samples = [
-                (s, l) for s, l in self.samples if s not in processed_samples
+                (sample, label)
+                for sample, label in self.samples
+                if sample not in processed_samples
             ]
             write_mode = "a"
         else:
@@ -112,13 +116,15 @@ class BasicClassifier:
             return 0.0, 0.0, 0.0
 
         # Calculate final metrics
-        accuracy = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == p) / len(y_true)
-        precision = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
-            sum(1 for p in y_pred if p == 1) + 1e-10
+        accuracy = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == p) / len(
+            y_true
         )
-        recall = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
-            sum(1 for t in y_true if t == 1) + 1e-10
-        )
+        precision = sum(
+            1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1
+        ) / (sum(1 for p in y_pred if p == 1) + 1e-10)
+        recall = sum(
+            1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1
+        ) / (sum(1 for t in y_true if t == 1) + 1e-10)
 
         return accuracy, precision, recall
 

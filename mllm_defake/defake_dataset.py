@@ -23,8 +23,8 @@ class ImageFolders(RealFakeDataset):
         self.fake_folder = Path(fake_folder)
 
     def list_images(self) -> tuple[list[Path], list[Path]]:
-        real_images = [x for x in self.real_folder.iterdir()]
-        fake_images = [x for x in self.fake_folder.iterdir()]
+        real_images = list(self.real_folder.iterdir())
+        fake_images = list(self.fake_folder.iterdir())
         return real_images, fake_images
 
 
@@ -36,6 +36,4 @@ class WildFakeResampled(RealFakeDataset):
         self.fake_images = self.data_root / "fake"
 
     def list_images(self) -> tuple[list[Path], list[Path]]:
-        return [x for x in self.real_images.iterdir()], [
-            x for x in self.fake_images.iterdir()
-        ]
+        return list(self.real_images.iterdir()), list(self.fake_images.iterdir())
