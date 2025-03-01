@@ -22,7 +22,7 @@ dependencies = [
     "Pillow",
     "tabulate",
     "opencv-python",
-    "filetype",
+    "filetype"
 ]
 
 [project.optional-dependencies]

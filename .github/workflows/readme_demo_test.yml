@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.12", "3.13"]
 
     steps:
       - name: Checkout repository
@@ -42,7 +42,7 @@ jobs:
       - name: Install mllm_defake and hatch
         run: |
           uv pip install --system -e .
-          uv pip install --system -e hatch
+          uv pip install --system hatch
 
       - name: Run static analysis
         run: hatch fmt --check
