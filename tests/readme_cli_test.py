@@ -28,7 +28,8 @@ def test_classify():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=ROOT_DIR,
-            env=os.environ.copy(), check=False,
+            env=os.environ.copy(),
+            check=False,
         )
         assert result.returncode == 0, result.stderr.decode()
 
@@ -44,6 +45,7 @@ def test_infer():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=ROOT_DIR,
-            env=os.environ.copy(), check=False,
+            env=os.environ.copy(),
+            check=False,
         )
         assert result.returncode == 0, result.stderr.decode()

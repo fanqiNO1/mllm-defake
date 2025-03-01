@@ -45,9 +45,7 @@ class Qwen2VLAPI(VLLM):
         super().__init__()
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key, http_client=self.http_client, base_url=url
-        )
+        self.client = OpenAI(api_key=api_key, http_client=self.http_client, base_url=url)
         self.short_name = "qwen2vl"
 
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
@@ -105,9 +103,7 @@ class OpenAICompat(VLLM):
         super().__init__()
         self.api_key = api_key
         self.http_client = httpx.Client(proxy=proxy) if proxy else httpx.Client()
-        self.client = OpenAI(
-            api_key=api_key, http_client=self.http_client, base_url=base_url
-        )
+        self.client = OpenAI(api_key=api_key, http_client=self.http_client, base_url=base_url)
 
     def infer_raw(self, messages: list[dict[str, str]]) -> str:
         response = self.client.chat.completions.create(
@@ -180,14 +176,10 @@ class Llama32VisionInstruct(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for Llama32VisionInstruct, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for Llama32VisionInstruct, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL
@@ -204,14 +196,10 @@ class Llama32VisionCoT(OpenAICompat):
     Modifies system prompts to work with this specific model.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for Llama32VisionCoT, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for Llama32VisionCoT, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL
@@ -235,14 +223,10 @@ class QVQ(OpenAICompat):
     Modifies system prompts to work with this specific model.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for QVQ, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for QVQ, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL
@@ -265,14 +249,10 @@ class InternVL25(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for InternVL25, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for InternVL25, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL
@@ -288,14 +268,10 @@ class LLaVAOneVision(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for LLaVAOneVision, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for LLaVAOneVision, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL
@@ -311,14 +287,10 @@ class Qwen2VL(OpenAICompat):
     Uses the OpenAI-compatible interface for inference with images.
     """
 
-    def __init__(
-        self, api_key: str, proxy: str | None = None, base_url: str | None = None
-    ):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
         # Set default base URL if none is provided
         if base_url is None:
-            logger.warning(
-                "No base URL provided for Qwen2VL, assuming http://127.0.0.1:8000/v1"
-            )
+            logger.warning("No base URL provided for Qwen2VL, assuming http://127.0.0.1:8000/v1")
             base_url = "http://127.0.0.1:8000/v1"
 
         # Initialize the parent class with the API key, proxy, and base URL

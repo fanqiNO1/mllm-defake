@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 class RealFakeDataset(ABC):
+    @abstractmethod
     def __init__(self):
         pass
 

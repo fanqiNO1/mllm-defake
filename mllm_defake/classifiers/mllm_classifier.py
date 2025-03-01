@@ -26,32 +26,20 @@ class MLLMClassifier:
         self,
         prompt: dict,
         model: VLLM,
-        real_samples: list[Path] = list(),
-        fake_samples: list[Path] = list(),
+        real_samples: list[Path],
+        fake_samples: list[Path],
     ):
         """
         Decorators should be a dictionary of decorator names and their corresponding callable functions that modifies the cache dict during inference. The callable functions should have the signature `def decorator(cache: dict) -> None`.
         """
-        if (
-            not isinstance(prompt, dict)
-            or "format_version" not in prompt
-            or prompt.get("format_version") != "3"
-        ):
-            raise ValueError(
-                f"Invalid prompt. Expected a v3 JSON object, but got: {prompt}"
-            )
+        if not isinstance(prompt, dict) or "format_version" not in prompt or prompt.get("format_version") != "3":
+            raise ValueError(f"Invalid prompt. Expected a v3 JSON object, but got: {prompt}")
         if not isinstance(model, VLLM) or not hasattr(model, "infer_raw"):
-            raise ValueError(
-                f"Invalid model. Expected a VLLM object with `infer_raw` method, but got: {model}"
-            )
+            raise ValueError(f"Invalid model. Expected a VLLM object with `infer_raw` method, but got: {model}")
         if not all(isinstance(x, Path) for x in real_samples):
-            raise ValueError(
-                f"Invalid real_samples. Expected a list of Path objects, but got: {real_samples}"
-            )
+            raise ValueError(f"Invalid real_samples. Expected a list of Path objects, but got: {real_samples}")
         if not all(isinstance(x, Path) for x in fake_samples):
-            raise ValueError(
-                f"Invalid fake_samples. Expected a list of Path objects, but got: {fake_samples}"
-            )
+            raise ValueError(f"Invalid fake_samples. Expected a list of Path objects, but got: {fake_samples}")
         self.prompt = prompt
         self.model = model
         self.real_samples = real_samples
@@ -66,9 +54,7 @@ class MLLMClassifier:
     def get_decorator_func(self, decorator: str) -> callable:
         module_name, func_name = decorator.rsplit(".", 1)
         try:
-            module = importlib.import_module(
-                module_name, package="mllm_defake.decorators"
-            )
+            module = importlib.import_module(module_name, package="mllm_defake.decorators")
             return getattr(module, func_name)
         except ImportError:
             try:
@@ -84,9 +70,7 @@ class MLLMClassifier:
                         module_name,
                         sys.path,
                     )
-                    raise ImportError(
-                        f"Decorator module not found: {module_name} ({e})"
-                    ) from e
+                    raise ImportError(f"Decorator module not found: {module_name} ({e})") from e
 
     def decorate(self, cache: dict, decorator: str) -> None:
         """
@@ -99,9 +83,7 @@ class MLLMClassifier:
             raise ImportError(f"The function {decorator} could not be imported")
         decorator_func(cache)
 
-    def llm_query(
-        self, sample: Path, label: int | bool, should_print_response: bool = False
-    ) -> str:
+    def llm_query(self, sample: Path, label: int | bool, should_print_response: bool = False) -> str:
         """
         Query the LLM model with the given sample and label.
 
@@ -184,9 +166,7 @@ class MLLMClassifier:
             cache[conv["response_var_name"]] = response
             logger.debug(f"Sandbox cache[{conv['response_var_name']}] = {response}")
             if should_print_response:
-                logger.info(
-                    f"Response to conversation #{i} ({conv['id']}):\n{response}"
-                )
+                logger.info(f"Response to conversation #{i} ({conv['id']}):\n{response}")
         return cache["result"]
 
     def postprocess(self, result: str) -> int:
@@ -197,15 +177,11 @@ class MLLMClassifier:
         last_fake = max(result.rfind("fake"), result.rfind("generated"))
         # If both searches fail, we cannot determine the final decision
         if last_real == -1 and last_fake == -1:
-            logger.warning(
-                "Could not determine the final decision from the response: {}", result
-            )
+            logger.warning("Could not determine the final decision from the response: {}", result)
             return -1
         return 1 if last_real > last_fake else 0
 
-    def classify(
-        self, sample: Path, label: int | bool = -1, should_print_response: bool = False
-    ) -> int:
+    def classify(self, sample: Path, label: int | bool = -1, should_print_response: bool = False) -> int:
         response = self.llm_query(sample, label, should_print_response)
         return self.postprocess(response)
 
@@ -215,14 +191,10 @@ class MLLMClassifier:
         if y_pred:
             acc = accuracy_score(y_true, y_pred) * 100
             real_acc = (
-                len([1 for i, y in enumerate(y_true) if y == 1 and y_pred[i] == 1])
-                / max(1, y_true.count(1))
-                * 100
+                len([1 for i, y in enumerate(y_true) if y == 1 and y_pred[i] == 1]) / max(1, y_true.count(1)) * 100
             )
             fake_acc = (
-                len([1 for i, y in enumerate(y_true) if y == 0 and y_pred[i] == 0])
-                / max(1, y_true.count(0))
-                * 100
+                len([1 for i, y in enumerate(y_true) if y == 0 and y_pred[i] == 0]) / max(1, y_true.count(0)) * 100
             )
             pbar.set_postfix(
                 all=f"{acc:.2f}%",
@@ -239,15 +211,9 @@ class MLLMClassifier:
         if continue_from is not None:
             df = continue_from
             processed_samples = set(df["path"].apply(Path))
-            self.samples = [
-                (sample, label)
-                for sample, label in self.samples
-                if sample not in processed_samples
-            ]
+            self.samples = [(sample, label) for sample, label in self.samples if sample not in processed_samples]
             write_mode = "a"
-            logger.info(
-                "Continuing evaluation with {} remaining samples", len(self.samples)
-            )
+            logger.info("Continuing evaluation with {} remaining samples", len(self.samples))
         else:
             df = pd.DataFrame(columns=["path", "label", "pred", "response"])
             write_mode = "w"
@@ -263,9 +229,7 @@ class MLLMClassifier:
 
         pbar = tqdm(enumerate(self.samples), total=len(self.samples), desc="Eval...")
         for i, (sample, label) in pbar:
-            logger.debug(
-                "Processing sample {}/{}: {}", i, len(self.samples), sample.name
-            )
+            logger.debug("Processing sample {}/{}: {}", i, len(self.samples), sample.name)
             pbar.set_description(f"Eval {sample.name[:19]}")
 
             try:
@@ -304,20 +268,18 @@ class MLLMClassifier:
         return self._calculate_final_metrics(y_true, y_pred)
 
     @staticmethod
-    def _calculate_final_metrics(
-        y_true: list, y_pred: list
-    ) -> tuple[float, float, float]:
+    def _calculate_final_metrics(y_true: list, y_pred: list) -> tuple[float, float, float]:
         """Calculate and log final metrics"""
         try:
             accuracy = accuracy_score(y_true, y_pred)
             precision = precision_score(y_true, y_pred, zero_division=0)
             recall = recall_score(y_true, y_pred, zero_division=0)
-            real_accuracy = len(
-                [1 for i, y in enumerate(y_true) if y == 1 and y_pred[i] == 1]
-            ) / max(1, y_true.count(1))
-            fake_accuracy = len(
-                [1 for i, y in enumerate(y_true) if y == 0 and y_pred[i] == 0]
-            ) / max(1, y_true.count(0))
+            real_accuracy = len([1 for i, y in enumerate(y_true) if y == 1 and y_pred[i] == 1]) / max(
+                1, y_true.count(1)
+            )
+            fake_accuracy = len([1 for i, y in enumerate(y_true) if y == 0 and y_pred[i] == 0]) / max(
+                1, y_true.count(0)
+            )
 
             logger.info(
                 "Metrics\n"
