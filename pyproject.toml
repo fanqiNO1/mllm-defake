@@ -1,6 +1,6 @@
 [project]
 name = "mllm_defake"
-version = "0.4.1"
+version = "0.4.2"
 description = 'A flexible & scalable MLLM-based AIGC detection pipeline'
 readme = {"file" = "readme.md", "content-type" = "text/markdown"}
 requires-python = ">=3.10"
@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "isort", "pytest-cov"]
+dev = ["pytest", "ruff", "isort", "pytest-cov"]
 
 [project.scripts]
 mllmdf = "mllm_defake.cli:main_cli"
