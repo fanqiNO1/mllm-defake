@@ -57,8 +57,8 @@ def find_roi_adaptive(image: np.ndarray) -> np.ndarray:
     )
 
     # Apply perspective transform
-    M = cv2.getPerspectiveTransform(src_pts, dst_pts)
-    roi = cv2.warpPerspective(image, M, (width, height))
+    m = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    roi = cv2.warpPerspective(image, m, (width, height))
 
     return roi
 

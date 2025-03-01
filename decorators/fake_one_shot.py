@@ -1,5 +1,3 @@
-
-
 def v1(cache: dict) -> None:
     cache[
         "one_shot_response"
