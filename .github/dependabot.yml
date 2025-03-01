@@ -9,6 +9,6 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-    versioning-strategy: "increate-if-necessary"
+    versioning-strategy: "increase-if-necessary"
     commit-message:
       prefix: "chore:"
