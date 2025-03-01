@@ -11,7 +11,7 @@ ROOT_DIR = Path(__file__).parent.parent
 COMMANDS = {
     "classify": ["mllmdf classify demo/real/img118131.jpg --model gpt4omini"],
     "infer": [
-        "mllmdf infer --model gpt4omini --real_dir demo/real --fake_dir demo/fake",
+        "mllmdf infer --model gpt4omini --real_dir demo/real --fake_dir demo/fake --count 1",
         "mllmdf doc",
     ],
 }
