@@ -1,5 +1,5 @@
 # Modified from https://github.com/pypa/hatch/blob/master/.github/workflows/test.yml
-name: readme_demo_test
+name: Hatch Linting
 
 on:
   push:
