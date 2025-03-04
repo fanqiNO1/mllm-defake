@@ -10,7 +10,7 @@ body:
 
         >[!WARNING]
         > - Please make sure to **search for existing issues** before creating a new one. If you find an existing issue that matches your problem or highly relates to it, you can comment on the existing issue instead of creating a new one.
-        > - Your issue may be better put in the [Discussions](https://github.com/Gennadiyev/mllm-defake/discussions) section if it is not a general research-related inquiry. GitHub Issues are not for support requests or general questions.
+        > - Your issue may be better put in the [Discussions](https://github.com/Gennadiyev/mllm-defake/discussions) section if it is a general research-related inquiry. GitHub Issues are not for support requests or general questions.
 
   - type: dropdown
     attributes:
