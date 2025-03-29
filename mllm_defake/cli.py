@@ -11,9 +11,16 @@ from loguru import logger
 
 import mllm_defake
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
+from mllm_defake.classifiers.basic_classifier import BasicClassifier
 from mllm_defake.datasets import SUPPORTED_DATASETS
 from mllm_defake.finetune import SUPPORTED_CONFIGS
 from mllm_defake.vllms import SUPPORTED_MODELS, VLLM
+
+
+SUPPORTED_BASIC_CLASSIFIERS = [
+    "canny",
+    "comfor",
+]
 
 
 def find_prompt_file(prompt: str) -> dict:
@@ -29,7 +36,7 @@ def find_prompt_file(prompt: str) -> dict:
     raise FileNotFoundError(f"Prompt file not found: {prompt}")
 
 
-def load_model(model: str) -> VLLM:
+def load_mllm(model: str) -> VLLM:
     model = model.lower()
     if model == "gpt-4o" or model == "gpt4o":
         from mllm_defake.vllms import GPT4o
@@ -99,6 +106,27 @@ def load_model(model: str) -> VLLM:
         raise ValueError(f"Invalid model: {model}")
 
 
+def load_basic_classifier(model: str, **kwargs) -> BasicClassifier:
+    model = model.lower()
+    if model == "comfor":
+        import torch
+        from mllm_defake.classifiers.basic_classifier import ComForClassifier
+
+        return ComForClassifier(
+            kwargs.get("comfor_checkpoint_path"),
+            [],
+            [],
+            input_size=kwargs.get("comfor_input_size"),
+            device="cuda:0" if torch.cuda.is_available() else "cpu",
+        )
+    elif model == "canny":
+        from mllm_defake.classifiers.basic_classifier import CannyClassifier
+
+        return CannyClassifier([], [])
+    else:
+        raise ValueError(f"Invalid model: {model}")
+
+
 def load_samples(
     dataset: str, count: int, real_dir: Path | None = None, fake_dir: Path | None = None
 ) -> tuple[list[Path], list[Path]]:
@@ -138,14 +166,14 @@ def load_samples(
 @click.option(
     "-m",
     "--model",
-    type=click.Choice(SUPPORTED_MODELS),
-    help="The model to use for inference.",
+    type=click.Choice(SUPPORTED_MODELS + SUPPORTED_BASIC_CLASSIFIERS),
+    help="The MLLM or the name of basic classifier to use for classification.",
     default="llama32vi",
 )
 @click.option(
     "-p",
     "--prompt",
-    help="The name or path to the prompt v3 JSON file. Please refer to `prompts/readme.md` for format details.",
+    help="The name or path to the prompt JSON file. Please refer to `prompts/readme.md` for format details. Only necessary if using MLLM.",
     default="simple",
 )
 @click.option(
@@ -154,8 +182,19 @@ def load_samples(
     help="Verbose. Set if you would like to see every step of the classification process, including the model's full response.",
     is_flag=True,
 )
+@click.option(
+    "--comfor-checkpoint-path",
+    help="Path to the Community Forensics checkpoint. Only necessary if using Community Forensics classifier (comfor).",
+    default="local/comfor/model_v11_ViT_384_base_ckpt.pt",
+)
+@click.option(
+    "--comfor-input-size",
+    help="Input size for Community Forensics classifier, either 224 or 384. Must match the checkpoint.",
+    type=click.Choice(["224", "384"]),
+    default="384",
+)
 @click.argument("image_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
-def classify(model: str, prompt: str, image_path: str, verbose: bool):
+def classify(image_path: str, model: str, prompt: str, verbose: bool, **kwargs):
     """
     Classify a single image as real or fake using the specified model.
 
@@ -163,10 +202,24 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
     """
     log_file = "logs/classify.log"
     logger.add(log_file, rotation="2 MB", backtrace=True, diagnose=True)
+    if model in SUPPORTED_BASIC_CLASSIFIERS:
+        # Load basic classifier
+        classifier = load_basic_classifier(model, **kwargs)
+        # Classify image
+        pred = classifier.classify(Path(image_path), -1)
+        if pred == -1:
+            result = "unknown"
+        elif pred == 1:
+            result = "real"
+        else:
+            result = "fake"
+        sys.stdout.write(result)
+        sys.stdout.flush()
+        return
     try:
         # Load prompt & model
         prompt_config = find_prompt_file(prompt)
-        model_instance = load_model(model)
+        model_instance = load_mllm(model)
 
         # Create classifier with single image
         image_path = Path(image_path)
@@ -184,11 +237,13 @@ def classify(model: str, prompt: str, image_path: str, verbose: bool):
             result = "fake"
 
         # Print result only (for easy command line usage)
-        print(result)
+        sys.stdout.write(result)
+        sys.stdout.flush()
 
     except Exception as e:
         logger.error(f"Error during classification: {e!s}")
-        print("unknown")
+        sys.stdout.write("unknown")
+        sys.stdout.flush()
         sys.exit(1)
 
 
@@ -352,7 +407,7 @@ def infer(
     logger.info("Will save the output to {}", output_path.resolve())
 
     # Load model
-    model = load_model(model)
+    model = load_mllm(model)
 
     # Check for existing results if continuing
     continue_df = None
