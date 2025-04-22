@@ -37,10 +37,7 @@ class GRPOTrainer_Qwen2_5_VL(BaseGRPOTrainer):
         for x in inputs:
             prompt = x["prompt"]
             last_content = prompt[-1]["content"]
-            prompt[-1]["content"] = [
-                {'type': 'image', 'text': None},
-                {'type': 'text', 'text': last_content}
-            ]
+            prompt[-1]["content"] = [{"type": "image", "text": None}, {"type": "text", "text": last_content}]
             new_inputs.append({"prompt": prompt})
         conversation_contents = [apply_chat_template(x, self.processing_class)["prompt"] for x in new_inputs]
         # replace <image>

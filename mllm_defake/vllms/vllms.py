@@ -170,6 +170,19 @@ class GPT45(OpenAICompat):
         self.short_name = "gpt45"
 
 
+class InternVL3(OpenAICompat):
+    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
+        # Set default base URL if none is provided
+        if base_url is None:
+            logger.warning("No base URL provided for InternVL3, assuming 'https://chat.intern-ai.org.cn/api/v1/'")
+            base_url = "https://chat.intern-ai.org.cn/api/v1/"
+        # Initialize the parent class with the API key, proxy, and base URL
+        super().__init__(api_key, proxy, base_url)
+        # Query the model name from the API
+        self.model_name = "internvl3-latest"
+        self.short_name = "internvl3"
+
+
 class Llama32VisionInstruct(OpenAICompat):
     """
     Implementation of Llama 3.2 Vision Instruct model.
@@ -243,25 +256,6 @@ class QVQ(OpenAICompat):
             messages[0]["role"] = "user"
             messages[0]["content"] = [{"type": "text", "text": messages[0]["content"]}]
         return super().infer_raw(messages)
-
-
-class InternVL25(OpenAICompat):
-    """
-    Implementation of InternVL 2.5 Vision model.
-    Uses the OpenAI-compatible interface for inference with images.
-    """
-
-    def __init__(self, api_key: str, proxy: str | None = None, base_url: str | None = None):
-        # Set default base URL if none is provided
-        if base_url is None:
-            logger.warning("No base URL provided for InternVL25, assuming http://127.0.0.1:8000/v1")
-            base_url = "http://127.0.0.1:8000/v1"
-
-        # Initialize the parent class with the API key, proxy, and base URL
-        super().__init__(api_key, proxy, base_url)
-        # Query the model name from the API
-        self.model_name = self.query_model_name()
-        self.short_name = "internvl25"
 
 
 class LLaVAOneVision(OpenAICompat):

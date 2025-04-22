@@ -16,7 +16,7 @@ class RealFakeDataset(ABC, Dataset):
 
         @return: Two lists of image file paths. The first list contains the paths of real images, and the second list contains the paths of fake images.
         """
-        return [], []
+        raise NotImplementedError("This method should be implemented in subclasses.")
 
     def __len__(self) -> int:
         """
@@ -75,8 +75,5 @@ class WildFakeResampled(RealFakeDataset):
     def __init__(self, data_root: str | Path = "./WildFakeResampled"):
         super().__init__()
         self.data_root = Path(data_root)
-        self.real_images = self.data_root / "real"
-        self.fake_images = self.data_root / "fake"
-
-    def list_images(self) -> tuple[list[Path], list[Path]]:
-        return [x for x in self.real_images.iterdir()], [x for x in self.fake_images.iterdir()]
+        self.real_folder = self.data_root / "real"
+        self.fake_folder = self.data_root / "fake"

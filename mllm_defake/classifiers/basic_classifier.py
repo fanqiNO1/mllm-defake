@@ -4,29 +4,70 @@ from pathlib import Path
 from typing import Literal
 
 import cv2
-from PIL import Image
 import numpy as np
 import pandas as pd
 import torch
+from PIL import Image
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 
+SUPPORTED_BASIC_CLASSIFIERS = ["canny", "comfor"]
 
+
+# --------------------------------------------------------------------------- #
+# Base class
+# --------------------------------------------------------------------------- #
 class BasicClassifier(ABC):
-    def __init__(self, real_samples: list[Path], fake_samples: list[Path]) -> None:
-        if not all(isinstance(x, Path) for x in real_samples):
-            raise ValueError(f"Invalid real_samples. Expected a list of Path objects, but got: {real_samples}")
-        if not all(isinstance(x, Path) for x in fake_samples):
-            raise ValueError(f"Invalid fake_samples. Expected a list of Path objects, but got: {fake_samples}")
-        self.real_samples = real_samples
-        self.fake_samples = fake_samples
+    """
+    Abstract base class for lightweight image classifiers used as baselines.
+
+    This class provides a framework for simple, heuristic, or traditional ML-based
+    image classifiers that can be used to establish baseline performance for
+    fake image detection.
+
+    Subclasses must implement the `classify` method to provide specific detection logic.
+    """
+
+    def __init__(self) -> None:  # noqa: B027 (allow empty __init__)
+        pass
 
     @abstractmethod
     def classify(self, sample: Path, label: int | bool) -> int:
-        raise NotImplementedError("Subclasses must implement the classify method.")
+        """
+        Classify a single image as real or fake.
 
-    def _update_metrics(self, y_true, y_pred, pbar):
-        """Helper method to update progress bar with current metrics"""
+        Parameters
+        ----------
+        sample : Path
+            Path to the image file to classify.
+        label : int or bool
+            Known label for the sample (may be used for debugging).
+            - 1 or True: real image
+            - 0 or False: fake image
+
+        Returns
+        -------
+        int
+            Classification result:
+            - 1: real image
+            - 0: fake image
+        """
+        pass
+
+    @staticmethod
+    def _update_metrics(y_true, y_pred, pbar) -> None:
+        """
+        Update progress bar with current evaluation metrics.
+
+        Parameters
+        ----------
+        y_true : list
+            List of true labels (1 for real, 0 for fake).
+        y_pred : list
+            List of predicted labels (1 for real, 0 for fake).
+        pbar : tqdm
+            Progress bar to update.
+        """
         if y_pred:
             acc = accuracy_score(y_true, y_pred) * 100
             real_acc = (
@@ -41,179 +82,288 @@ class BasicClassifier(ABC):
                 fakes=f"{fake_acc:.2f}%",
             )
 
-    def evaluate(self, output_path: Path, continue_from: pd.DataFrame = None) -> tuple[float, float, float]:
+    def evaluate(
+        self,
+        real_samples: list[Path],
+        fake_samples: list[Path],
+        output_path: Path,
+        continue_from: pd.DataFrame | None = None,
+    ) -> tuple[float, float, float]:
         """
-        Evaluate the classifier on the provided samples
+        Evaluate the classifier on a set of real and fake images.
 
-        Args:
-            output_path (Path): Path to save evaluation results
-            continue_from (pd.DataFrame, optional): Previous evaluation results to continue from
+        Parameters
+        ----------
+        real_samples : list[Path]
+            List of paths to real image samples.
+        fake_samples : list[Path]
+            List of paths to fake image samples.
+        output_path : Path
+            Path to save the evaluation results CSV file.
+        continue_from : pd.DataFrame, optional
+            If provided, continue evaluation from this previously saved results dataframe.
 
-        Returns:
-            tuple[float, float, float]: Accuracy, precision, and recall scores
+        Returns
+        -------
+        tuple[float, float, float]
+            A tuple of (accuracy, precision, recall) metrics.
+
+        Notes
+        -----
+        Results are written to a CSV file with columns:
+        - path: Path to the image
+        - label: True label (1 for real, 0 for fake)
+        - pred: Predicted label (1 for real, 0 for fake)
+
+        Raises
+        ------
+        ValueError
+            If input sample lists contain invalid types.
         """
-        # Combine real and fake samples with their labels
-        self.samples = [(s, 1) for s in self.real_samples] + [(s, 0) for s in self.fake_samples]
+        if not all(isinstance(p, Path) for p in real_samples):
+            raise ValueError("`real_samples` must be a list[Path].")
+        if not all(isinstance(p, Path) for p in fake_samples):
+            raise ValueError("`fake_samples` must be a list[Path].")
+
+        samples: list[tuple[Path, int]] = [(p, 1) for p in real_samples] + [(p, 0) for p in fake_samples]
 
         if continue_from is not None:
-            df = continue_from
-            processed_samples = set(df["path"].apply(Path))
-            self.samples = [(sample, label) for sample, label in self.samples if sample not in processed_samples]
+            processed = set(continue_from["path"].apply(Path))
+            samples = [(p, y) for p, y in samples if p not in processed]
             write_mode = "a"
         else:
-            df = pd.DataFrame(columns=["path", "label", "pred"])
+            continue_from = pd.DataFrame(columns=["path", "label", "pred"])
             write_mode = "w"
 
-        y_true = []
-        y_pred = []
-
-        pbar = tqdm(enumerate(self.samples), total=len(self.samples), desc="Evaluating...")
+        y_true, y_pred = [], []
+        pbar = tqdm(enumerate(samples), total=len(samples), desc="Evaluating...")
         for i, (sample, label) in pbar:
             pbar.set_description(f"Eval {sample.name[:19]}")
-
             try:
-                # Use the classify method to get prediction
                 pred = self.classify(sample, label)
                 y_true.append(label)
                 y_pred.append(pred)
 
-                new_row = pd.DataFrame(
-                    {
-                        "path": [sample],
-                        "label": [label],
-                        "pred": [pred],
-                    }
+                pd.DataFrame({"path": [sample], "label": [label], "pred": [pred]}).to_csv(
+                    output_path,
+                    index=False,
+                    mode="w" if (i == 0 and write_mode == "w") else "a",
+                    header=(i == 0 and write_mode == "w"),
                 )
 
-                if i == 0 and write_mode == "w":
-                    new_row.to_csv(output_path, index=False, mode="w")
-                else:
-                    new_row.to_csv(output_path, index=False, mode="a", header=False)
-
-                # Calculate and update metrics
                 self._update_metrics(y_true, y_pred, pbar)
 
-            except Exception as e:
-                print(f"Error processing sample {sample.name}: {e}")
-                continue
+            except Exception as exc:  # pylint: disable=broad-except
+                print(f"Error processing {sample.name}: {exc}")
 
-        if not y_pred:
-            print("No valid predictions were made during evaluation")
+        if not y_pred:  # no successful predictions
+            print("No valid predictions produced.")
             return 0.0, 0.0, 0.0
 
-        # Calculate final metrics
-        accuracy = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == p) / len(y_true)
-        precision = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
-            sum(1 for p in y_pred if p == 1) + 1e-10
+        # Final metrics (avoid div/0 with 1e‑10)
+        accuracy = sum(t == p for t, p in zip(y_true, y_pred, strict=False)) / len(y_true)
+        precision = sum(t == p == 1 for t, p in zip(y_true, y_pred, strict=False)) / (
+            sum(p == 1 for p in y_pred) + 1e-10
         )
-        recall = sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == 1 and p == 1) / (
-            sum(1 for t in y_true if t == 1) + 1e-10
-        )
-
+        recall = sum(t == p == 1 for t, p in zip(y_true, y_pred, strict=False)) / (sum(t == 1 for t in y_true) + 1e-10)
         return accuracy, precision, recall
 
 
+# --------------------------------------------------------------------------- #
+# Canny‑edge baseline
+# --------------------------------------------------------------------------- #
 class CannyClassifier(BasicClassifier):
-    def canny(self, sample: Path) -> float:
-        img = cv2.imread(str(sample), 0)
+    """
+    Edge-density baseline detector using Canny edge filtering.
+
+    This classifier uses the density of edges detected by the Canny algorithm
+    to differentiate between real and synthetic images, based on the observation
+    that AI-generated images often have different edge patterns than real photos.
+    """
+
+    @staticmethod
+    def _canny_density(sample: Path) -> float:
+        """
+        Calculate the edge density of an image using Canny edge detection.
+
+        Parameters
+        ----------
+        sample : Path
+            Path to the image file.
+
+        Returns
+        -------
+        float
+            The density of edges (ratio of edge pixels to total pixels).
+        """
+        img = cv2.imread(str(sample), cv2.IMREAD_GRAYSCALE)
         edges = cv2.Canny(img, threshold1=100, threshold2=200)
-        edge_density = np.sum(edges > 0) / (edges.shape[0] * edges.shape[1])
-        return edge_density
+        return np.sum(edges > 0) / (edges.shape[0] * edges.shape[1])
 
-    def classify(self, sample: Path, label: int | bool) -> int:
-        edge_density = self.canny(sample)
-        return 1 if edge_density > 0.0672 else 0
+    def classify(self, sample: Path, label: int | bool = -1) -> int:
+        """
+        Classify an image based on its edge density.
+
+        Parameters
+        ----------
+        sample : Path
+            Path to the image file to classify.
+        label : int or bool
+            Known label for the sample. Unused but reserved for interface.
+
+        Returns
+        -------
+        int
+            Classification result:
+            - 1: real image (edge density > threshold)
+            - 0: fake image (edge density <= threshold)
+        """
+        return 1 if self._canny_density(sample) > 0.0672 else 0
 
 
+# --------------------------------------------------------------------------- #
+# Community‑Forensics ViT baseline
+# --------------------------------------------------------------------------- #
 class ComForClassifier(BasicClassifier):
+    """
+    Wrapper for the Community-Forensics ViT detector.
+
+    This classifier uses a Vision Transformer model trained on the Community Forensics
+    dataset to detect AI-generated images. The model was developed by Park et al.
+    and is available at https://jespark.net/projects/2024/community_forensics/.
+    """
+
     def __init__(
         self,
         community_forensics_checkpoint_path: Path,
-        real_samples: list[Path],
-        fake_samples: list[Path],
         input_size: Literal["224", "384"] = "384",
-        device: str | torch.device = "cuda:0",
+        device: str | torch.device | None = None,
     ) -> None:
         """
-        This classifier is a wrapper for the Community-Forensics project (https://jespark.net/projects/2024/community_forensics/), which trains a relatively lightweight ViT model to classify images as real or fake with high accuracy and good OOD performance.
+        Initialize the Community-Forensics classifier.
 
-        To use this classifier, follow these steps:
+        Parameters
+        ----------
+        community_forensics_checkpoint_path : Path
+            Path to the pre-trained model checkpoint file.
+        input_size : Literal["224", "384"], default="384"
+            Input resolution for the model (224x224 or 384x384).
+        device : str or torch.device, default="cuda:0"
+            Device to run the model on (e.g., "cuda:0", "cpu").
 
-        1. Follow the instructions in the Community-Forensics repository (https://github.com/JeongsooP/Community-Forensics) to download the checkpoint, and specify the corresponding path in `community_forensics_checkpoint_path` parameter.
-
-        2. Specify the `input_size` parameter to either "224" or "384" depending on the checkpoint you downloaded. Note that the community_forensics_checkpoint_path and timm_vit_checkpoint_path should be in the same resolution.
+        Raises
+        ------
+        ValueError
+            If input_size is not "224" or "384".
+        ImportError
+            If required dependencies are missing.
         """
+        super().__init__()
         self.check_dependencies()
+
         import torch.nn as nn
         import timm
-        from PIL import Image
-        from torchvision.transforms import Resize, CenterCrop, ToTensor, Normalize, ConvertImageDtype, Compose
-
-        super().__init__(real_samples, fake_samples)
+        from torchvision.transforms import (
+            CenterCrop,
+            Compose,
+            ConvertImageDtype,
+            Normalize,
+            Resize,
+            ToTensor,
+        )
 
         class _ComForModel(nn.Module):
-            def __init__(self, input_size: int, device: str | torch.device = "cuda:0"):
+            def __init__(self, in_size: int, dev: str | torch.device):
                 super().__init__()
-                self.input_size = input_size
-                self.device = device  # Specify device to move input tensor to the correct device before forward pass
-                if input_size == 224:
-                    self.vit = timm.create_model("vit_small_patch16_224.augreg_in21k_ft_in1k", pretrained=False)
-                elif input_size == 384:
-                    self.vit = timm.create_model("vit_small_patch16_384.augreg_in21k_ft_in1k", pretrained=False)
-                self.vit.head = nn.Linear(
-                    in_features=384, out_features=1, bias=True, device=device, dtype=torch.float32
-                )
+                self.in_size = in_size
+                self.dev = dev
 
-            def preprocess_input(self, x: Image.Image):
-                norm_mean = [0.48145466, 0.4578275, 0.40821073]
-                norm_std = [0.26862954, 0.26130258, 0.27577711]
-                augment_list = []
-                resize_size = 440
-                crop_size = 384
-                if self.input_size == 224:
-                    resize_size = 256
-                    crop_size = 224
-                augment_list.extend(
+                vit_name = (
+                    "vit_small_patch16_224.augreg_in21k_ft_in1k"
+                    if in_size == 224
+                    else "vit_small_patch16_384.augreg_in21k_ft_in1k"
+                )
+                self.vit = timm.create_model(vit_name, pretrained=False)
+                self.vit.head = nn.Linear(384, 1, bias=True, device=dev)
+
+                self.preprocess = Compose(
                     [
-                        Resize(resize_size),
-                        CenterCrop(crop_size),
+                        Resize(256 if in_size == 224 else 440),
+                        CenterCrop(in_size),
                         ToTensor(),
-                        Normalize(mean=norm_mean, std=norm_std),
+                        Normalize(
+                            mean=[0.48145466, 0.4578275, 0.40821073],
+                            std=[0.26862954, 0.26130258, 0.27577711],
+                        ),
                         ConvertImageDtype(torch.float32),
                     ]
                 )
-                preprocess = Compose(augment_list)
-                x = preprocess(x)
-                x = x.unsqueeze(0)
-                return x
 
-            def forward(self, x):
-                x = self.preprocess_input(x).to(self.device)
-                x = self.vit(x)
-                x = torch.nn.functional.sigmoid(x)
-                return x
+            def forward(self, pil_img: Image.Image):
+                x = self.preprocess(pil_img).unsqueeze(0).to(self.dev)
+                return torch.sigmoid(self.vit(x))
 
-        if input_size == "224":
-            self.model = _ComForModel(224, device=device)
-        elif input_size == "384":
-            self.model = _ComForModel(384, device=device)
-        else:
-            raise ValueError(f"Unsupported input size: {input_size}")
+        sz = 224 if input_size == "224" else 384 if input_size == "384" else None
+        if sz is None:
+            raise ValueError("`input_size` must be '224' or '384'.")
 
-        comfor_checkpoint = torch.load(community_forensics_checkpoint_path, map_location=device)
-        self.model.load_state_dict(comfor_checkpoint["model"], strict=True)
-        self.model.to(device)
-        self.model.eval()
+        self.model = _ComForModel(sz, device).to(device).eval()
+        state = torch.load(community_forensics_checkpoint_path, map_location=device)
+        self.model.load_state_dict(state["model"], strict=True)
 
-    def check_dependencies(self) -> None:
-        if any(importlib.util.find_spec(module) is None for module in ["torch", "torchvision", "timm"]):
-            raise ImportError("Missing dependencies, please run 'pip install -e .[comfor]'")
+    # .............................................................
+    @staticmethod
+    def check_dependencies() -> None:
+        """
+        Check if required dependencies are installed.
 
-    def com_for(self, sample: Path) -> float:
+        Raises
+        ------
+        ImportError
+            If any required dependency is missing.
+        """
+        missing = [m for m in ("torch", "torchvision", "timm") if importlib.util.find_spec(m) is None]
+        if missing:
+            raise ImportError(f"Missing dependencies: {', '.join(missing)}")
+
+    # .............................................................
+    def _fake_probability(self, sample: Path) -> float:
+        """
+        Calculate the probability that an image is fake.
+
+        Parameters
+        ----------
+        sample : Path
+            Path to the image file.
+
+        Returns
+        -------
+        float
+            Probability score between 0 and 1, where higher values indicate
+            higher likelihood of being a fake image.
+        """
         img = Image.open(sample).convert("RGB")
-        fake_prob = self.model(img).item()
-        return 1 - fake_prob
+        # model returns prob(fake); invert for prob(real)
+        return 1.0 - self.model(img).item()
 
+    # .............................................................
     def classify(self, sample: Path, label: int | bool) -> int:
-        high_freq_content = self.high_freq_content(sample)
-        return 1 if high_freq_content > 8.5 else 0
+        """
+        Classify an image as real or fake using the Community-Forensics model.
+
+        Parameters
+        ----------
+        sample : Path
+            Path to the image file to classify.
+        label : int or bool
+            Known label for the sample (unused but required by the interface).
+
+        Returns
+        -------
+        int
+            Classification result:
+            - 1: real image (probability > 0.5)
+            - 0: fake image (probability <= 0.5)
+        """
+        # Threshold chosen from original paper/README recommendations
+        return 1 if self._fake_probability(sample) > 0.5 else 0

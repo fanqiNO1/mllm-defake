@@ -1,4 +1,4 @@
-from .vllms import (
+from mllm_defake.vllms.vllms import (
     VLLM,
     OpenAICompat,
     Qwen2VL,
@@ -7,11 +7,12 @@ from .vllms import (
     GPT4o,
     GPT4oMini,
     GPT45,
-    InternVL25,
     Llama32VisionCoT,
     Llama32VisionInstruct,
     LLaVAOneVision,
+    InternVL3,
 )
+from mllm_defake.vllms.lora import VLLMServedLoRA
 
 __all__ = [
     "VLLM",
@@ -22,10 +23,12 @@ __all__ = [
     "GPT4o",
     "GPT4oMini",
     "GPT45",
-    "InternVL25",
     "Llama32VisionCoT",
     "Llama32VisionInstruct",
     "LLaVAOneVision",
+    "VLLMServedLoRA",
+    "InternVL3",
+    "SUPPORTED_MODELS",
 ]
 
 SUPPORTED_MODELS = [
@@ -35,7 +38,9 @@ SUPPORTED_MODELS = [
     "llama32vi",
     "llavacot",
     "qvq",
-    "internvl25",
     "onevision",
     "qwen2vl",
+    "vllm",
+    "qwen2vlapi",
+    "internvl3",
 ]

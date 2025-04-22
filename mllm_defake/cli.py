@@ -9,18 +9,14 @@ import orjson
 import pandas as pd
 from loguru import logger
 
+
 import mllm_defake
+
 from mllm_defake.classifiers.mllm_classifier import MLLMClassifier
-from mllm_defake.classifiers.basic_classifier import BasicClassifier
+from mllm_defake.classifiers.basic_classifier import BasicClassifier, SUPPORTED_BASIC_CLASSIFIERS
 from mllm_defake.datasets import SUPPORTED_DATASETS
 from mllm_defake.finetune import SUPPORTED_CONFIGS
 from mllm_defake.vllms import SUPPORTED_MODELS, VLLM
-
-
-SUPPORTED_BASIC_CLASSIFIERS = [
-    "canny",
-    "comfor",
-]
 
 
 def find_prompt_file(prompt: str) -> dict:
@@ -84,12 +80,12 @@ def load_mllm(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return QVQ(api_key=api_key, base_url=base_url)
-    elif model == "internvl-2.5" or model == "internvl25":
-        from mllm_defake.vllms import InternVL25
+    elif model == "internvl3-latest" or model == "internvl3":
+        from mllm_defake.vllms import InternVL3
 
         api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
-        return InternVL25(api_key=api_key, base_url=base_url)
+        base_url = os.getenv("BASE_URL") or "https://chat.intern-ai.org.cn/api/v1"
+        return InternVL3(api_key=api_key, base_url=base_url)
     elif model == "onevision":
         from mllm_defake.vllms import LLaVAOneVision
 
@@ -102,6 +98,12 @@ def load_mllm(model: str) -> VLLM:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
         return Qwen2VL(api_key=api_key, base_url=base_url)
+    elif model == "vllm":
+        from mllm_defake.vllms import VLLMServedLoRA
+
+        api_key = os.getenv("OPENAI_API_KEY", "VLLM_PLACEHOLDER_KEY")
+        base_url = os.getenv("BASE_URL") or "http://127.0.0.1:8000/v1"
+        return VLLMServedLoRA(api_key=api_key, base_url=base_url)
     else:
         raise ValueError(f"Invalid model: {model}")
 
@@ -114,15 +116,13 @@ def load_basic_classifier(model: str, **kwargs) -> BasicClassifier:
 
         return ComForClassifier(
             kwargs.get("comfor_checkpoint_path"),
-            [],
-            [],
             input_size=kwargs.get("comfor_input_size"),
             device="cuda:0" if torch.cuda.is_available() else "cpu",
         )
     elif model == "canny":
         from mllm_defake.classifiers.basic_classifier import CannyClassifier
 
-        return CannyClassifier([], [])
+        return CannyClassifier()
     else:
         raise ValueError(f"Invalid model: {model}")
 
@@ -203,9 +203,7 @@ def classify(image_path: str, model: str, prompt: str, verbose: bool, **kwargs):
     log_file = "logs/classify.log"
     logger.add(log_file, rotation="2 MB", backtrace=True, diagnose=True)
     if model in SUPPORTED_BASIC_CLASSIFIERS:
-        # Load basic classifier
         classifier = load_basic_classifier(model, **kwargs)
-        # Classify image
         pred = classifier.classify(Path(image_path), -1)
         if pred == -1:
             result = "unknown"
@@ -223,10 +221,10 @@ def classify(image_path: str, model: str, prompt: str, verbose: bool, **kwargs):
 
         # Create classifier with single image
         image_path = Path(image_path)
-        classifier = MLLMClassifier(prompt_config, model_instance, [], [])
+        classifier = MLLMClassifier(prompt_config, model_instance)
 
         # Get prediction
-        pred = classifier.classify(image_path, -1, should_print_response=verbose)
+        pred = classifier.classify(image_path, should_print_response=verbose)
 
         # Map prediction to human-readable output
         if pred == -1:
@@ -241,10 +239,9 @@ def classify(image_path: str, model: str, prompt: str, verbose: bool, **kwargs):
         sys.stdout.flush()
 
     except Exception as e:
-        logger.error(f"Error during classification: {e!s}")
         sys.stdout.write("unknown")
         sys.stdout.flush()
-        sys.exit(1)
+        raise e
 
 
 @click.command()
@@ -485,7 +482,7 @@ def infer(
             fake_end_index,
         )
 
-    classifier = MLLMClassifier(prompt, model, real_samples, fake_samples)
+    classifier = MLLMClassifier(prompt, model, random_seed=seed)
     if not output:
         readable_output_name = "{dataset}-{count}_{model}_{prompt}{log_id}.csv".format(
             dataset=dataset,
@@ -503,6 +500,8 @@ def infer(
     readable_output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.success("Starting evaluation with output: {}", readable_output_path)
     classifier.evaluate(
+        real_samples=real_samples,
+        fake_samples=fake_samples,
         output_path=f"outputs/{readable_output_name}",
         continue_from=continue_df,
         should_print_response=verbose,
@@ -637,7 +636,7 @@ def doc_writer(experiment_name: str) -> None:
         write_table_rows(f, correct_df, markdown_dir)
         f.write("\n")
 
-        f.write(f"Created by {mllm_defake.__name__} - `v{mllm_defake.__version__}`")
+        f.write(f"Created by {mllm_defake.__name__}")
 
     logger.success("Saved the experiment results to outputs/{}.md", real_experiment_name)
     d_, m_, p_, c_ = guess_experiment_setup_from_path(Path(real_experiment_name))
