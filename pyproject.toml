@@ -1,6 +1,6 @@
 [project]
 name = "mllm_defake"
-version = "0.4.2"
+version = "0.5.0"
 description = 'A flexible & scalable MLLM-based AIGC detection pipeline'
 readme = {"file" = "readme.md", "content-type" = "text/markdown"}
 requires-python = ">=3.10"
