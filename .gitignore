@@ -8,6 +8,7 @@ __pycache__
 *.pyc
 logs
 WildFakeResampled*
+WhydFake
 run.ps1
 run.sh
 dist
@@ -18,4 +19,5 @@ build
 *.db-journal
 *.log
 *.log.*
+*.pdf
 tmp.py
