@@ -2,15 +2,15 @@ import os
 import random
 
 
-def use_torchrun():
+def _use_torchrun():
     nproc_per_node = os.getenv("NPROC_PER_NODE")
     if nproc_per_node is None:
         return False
     return True
 
 
-def get_torchrun_args():
-    if not use_torchrun():
+def _get_torchrun_args():
+    if not _use_torchrun():
         return None
 
     nnodes = int(os.getenv("NNODES", 1))

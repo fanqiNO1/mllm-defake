@@ -5,7 +5,7 @@ import yaml
 from swift.llm.train import SwiftRLHF
 
 import mllm_defake.finetune.rewards
-from mllm_defake.finetune.utils import get_torchrun_args
+from mllm_defake.finetune.utils import _get_torchrun_args
 
 
 def grpo_train(config):
@@ -27,7 +27,7 @@ def grpo_train(config):
     # hardcode to disable versioning
     cmd.append("--no_add_version")
     # run
-    torchrun_args = get_torchrun_args()
+    torchrun_args = _get_torchrun_args()
     if torchrun_args is None:
         cmd = ["python", *cmd]
     else:

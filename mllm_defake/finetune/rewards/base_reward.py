@@ -2,6 +2,7 @@ from swift.plugin import ORM
 
 from mllm_defake.finetune.rewards.utils import cal_iou, check_format, check_label
 
+
 class BaseReward(ORM):
     
     # reward base, can be used to shift the reward distribution
@@ -25,17 +26,18 @@ class BaseReward(ORM):
                 - "ref": list[str], the reference text for the object.
                 - "bbox": list[list[float]], the bounding box coordinates for the object.
             The `objects` is the same as the data format used in SFT stage.
+            images (list[str]): List of image paths corresponding to the completions.
         """
         rewards = []
         for this_completion, this_objects in zip(completions, objects):
             reward = self.reward_base
             # calculate iou reward
-            # if this_objects is empty, iou is 0
+            # if this_objects is empty, iou is 1
             iou = cal_iou(this_completion, this_objects)
             iou_reward = self.iou_reward_weight * (iou ** self.iou_reward_exponent)
             reward += iou_reward
             # calculate label reward
-            # if this_objects is not empty, actual label is `ai generated`
+            # if this_objects is empty, ground truth is `real`
             is_label_correct = check_label(this_completion, this_objects)
             if is_label_correct:
                 label_reward = self.label_correct_reward_weight
@@ -43,7 +45,8 @@ class BaseReward(ORM):
                 label_reward = self.label_incorrect_reward_weight
             reward += label_reward
             # calculate format reward
-            is_format_correct = check_format(this_completion)
+            # if this_objects is empty, grounding format is not required
+            is_format_correct = check_format(this_completion, this_objects)
             if is_format_correct:
                 format_reward = self.format_correct_reward_weight
             else:
