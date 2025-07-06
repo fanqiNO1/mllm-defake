@@ -17,7 +17,7 @@ class BaseReward(ORM):
     format_correct_reward_weight = 1.0
     format_incorrect_reward_weight = -1.0
 
-    def __call__(self, completions: list[str], objects: list[dict], **kwargs):
+    def __call__(self, completions: list[str], objects: list[dict], images: list[str], **kwargs):
         """Calculate the reward for the given completions and objects.
         
         Args:
@@ -27,13 +27,16 @@ class BaseReward(ORM):
                 - "bbox": list[list[float]], the bounding box coordinates for the object.
             The `objects` is the same as the data format used in SFT stage.
             images (list[str]): List of image paths corresponding to the completions.
+        
+        Returns:
+            list[float]: List of rewards for each completion.
         """
         rewards = []
-        for this_completion, this_objects in zip(completions, objects):
+        for this_completion, this_objects, this_images in zip(completions, objects, images):
             reward = self.reward_base
             # calculate iou reward
             # if this_objects is empty, iou is 1
-            iou = cal_iou(this_completion, this_objects)
+            iou = cal_iou(this_completion, this_objects, this_images)
             iou_reward = self.iou_reward_weight * (iou ** self.iou_reward_exponent)
             reward += iou_reward
             # calculate label reward
