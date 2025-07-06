@@ -84,10 +84,13 @@ def cal_iou(completion: str, objects: dict, images: list[str]) -> float:
     pattern = rf"{ref_object_start}.*?{ref_object_end}\s*{box_start}(.*?){box_end}"
     bboxes = []
     for box in re.findall(pattern, completion):
+        # qwen2.5-vl: [[x1, y1], [x2, y2]]
+        # internvl3: (x1,y1),(x2,y2)
         box = box.strip().replace(" ", "").replace("[[", "[").replace("]]", "]")
         box = box.replace("(", "[").replace(")", "]")
+        # converted to [x1, y1], [x2, y2]
         try:
-            x1, x2, y1, y2 = json.loads(box)
+            x1, y1, x2, y2 = json.loads([box])[0]
             bbox = _post_process_bbox([x1, y1, x2, y2], images, model_type)
             bboxes.append(bbox)
         except Exception:
